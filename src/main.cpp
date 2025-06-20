@@ -1,352 +1,380 @@
-// =================================================================
-//                 LIBRARY INCLUSIONS
-// =================================================================
+#include <Arduino.h>
 #include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
-#include <ESPAsyncWebServer.h>
 #include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
-#include <NTPClient.h>
+#include <ESPAsyncTCP.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
+#include <TimeAlarms.h>
+#include <ESPAsyncWebServer.h>
+
+// FIX 1 (Re-confirm): This directive MUST be before the WiFiManager include to prevent library conflicts.
+#define WM_ASYNC_WEB_SERVER 1
 #include <WiFiManager.h>
 
-// =================================================================
-//                 PIN & CONSTANT DEFINITIONS
-// =================================================================
-const int PWM_OUTPUT_PIN = D1;      // GPIO5 on NodeMCU
-const int CONFIG_TRIGGER_PIN = D2;  // GPIO4, a safe pin for boot checking
-const int PWM_RANGE = 255;          // Using 8-bit PWM
+// -- Hardware Pins --
+const int PWM_OUTPUT_PIN = D1; // GPIO5 on NodeMCU
+const int CONFIG_RESET_PIN = D2; // GPIO4. Short this pin to GND to trigger config portal.
 
-// =================================================================
-//                 GLOBAL VARIABLES & OBJECTS
-// =================================================================
+// -- LED PWM Settings (for inverting driver) --
+const int PWM_RANGE = 255; // Using 8-bit PWM
 
-// --- Configuration Struct ---
+// -- Configuration Struct --
 struct Config {
-  char deviceName = "ledbar";
-  bool ledState = false;
-  int brightness = 128;
-  bool timerEnabled = false;
-  int onHour = 8;
-  int onMinute = 0;
-  int offHour = 22;
-  int offMinute = 0;
+    char deviceName[33] = "ledbar";
+    int brightness = 255;
+    bool state = true; // true = ON, false = OFF
+    bool timerEnabled = false;
+    char onTime[6] = "07:00"; // HH:MM format
+    char offTime[6] = "23:00"; // HH:MM format
 };
-Config config;
-bool shouldSaveConfig = false;
 
-// --- Web Server & WebSockets ---
+Config config; // Global config object
+
+// -- Global Objects --
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
+WiFiManager wm;
+bool shouldSaveConfig = false;
 
-// --- NTP Time Client ---
-const long UTC_OFFSET_IN_SECONDS = 0; // TODO: Set your timezone offset
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", UTC_OFFSET_IN_SECONDS);
+// FIX 2: Create variables to hold the alarm IDs
+AlarmID_t onTimerId = dtINVALID_ALARM_ID;
+AlarmID_t offTimerId = dtINVALID_ALARM_ID;
 
-// --- Scheduler State ---
-int lastCheckedMinute = -1;
-bool onActionTriggered = false;
-bool offActionTriggered = false;
 
-// =================================================================
-//                 FORWARD DECLARATIONS
-// =================================================================
-void setLedOutput(bool state, int brightness);
+// -- Function Declarations --
+void setLed(bool newState, int newBrightness);
+void saveConfiguration(const char *filename, const Config &conf);
+void loadConfiguration(const char *filename, Config &conf);
 void notifyClients();
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len);
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len);
-void loadConfiguration(const char *filename, Config &config);
-void saveConfiguration(const char *filename, const Config &config);
-void saveConfigCallback();
+void setupTime();
+void digitalClockDisplay();
+void triggerLedOn();
+void triggerLedOff();
+void setupTimers();
+
 
 // =================================================================
-//                 LED CONTROL LOGIC
+// Configuration Management (JSON with LittleFS)
 // =================================================================
-// Sets the LED state and brightness, handling the inverting driver logic
-void setLedOutput(bool state, int brightness) {
-  if (state) {
-    // Inverting driver: ESP PWM 0 = MAX Brightness, 255 = OFF
-    // To get target brightness B, we need ESP PWM = 255 - B
-    int pwmValue = PWM_RANGE - constrain(brightness, 0, PWM_RANGE);
-    analogWrite(PWM_OUTPUT_PIN, pwmValue);
-  } else {
-    // LED OFF
-    analogWrite(PWM_OUTPUT_PIN, PWM_RANGE);
-  }
-}
 
-// =================================================================
-//                 PERSISTENCE (LittleFS & JSON)
-// =================================================================
-// Loads configuration from a JSON file on LittleFS
-void loadConfiguration(const char *filename, Config &config) {
-  if (LittleFS.begin()) {
-    File configFile = LittleFS.open(filename, "r");
-    if (!configFile) {
-      Serial.println("Failed to open config file for reading, using defaults.");
-      saveConfiguration(filename, config); // Create file with defaults
-      return;
-    }
-
-    StaticJsonDocument doc;
-    DeserializationError error = deserializeJson(doc, configFile);
-    if (error) {
-      Serial.println("Failed to parse config file, using defaults.");
-      return;
-    }
-
-    strlcpy(config.deviceName, doc["deviceName"] | "ledbar", sizeof(config.deviceName));
-    config.ledState = doc | false;
-    config.brightness = doc["brightness"] | 128;
-    config.timerEnabled = doc["timerEnabled"] | false;
-    config.onHour = doc["onHour"] | 8;
-    config.onMinute = doc["onMinute"] | 0;
-    config.offHour = doc["offHour"] | 22;
-    config.offMinute = doc["offMinute"] | 0;
-
-    configFile.close();
-    Serial.println("Configuration loaded.");
-  } else {
-    Serial.println("Failed to mount LittleFS.");
-  }
-}
-
-// Saves configuration to a JSON file on LittleFS
-void saveConfiguration(const char *filename, const Config &config) {
-  File configFile = LittleFS.open(filename, "w");
-  if (!configFile) {
-    Serial.println("Failed to open config file for writing.");
-    return;
-  }
-
-  StaticJsonDocument doc;
-  doc["deviceName"] = config.deviceName;
-  doc = config.ledState;
-  doc["brightness"] = config.brightness;
-  doc["timerEnabled"] = config.timerEnabled;
-  doc["onHour"] = config.onHour;
-  doc["onMinute"] = config.onMinute;
-  doc["offHour"] = config.offHour;
-  doc["offMinute"] = config.offMinute;
-
-  if (serializeJson(doc, configFile) == 0) {
-    Serial.println("Failed to write to config file.");
-  } else {
-    Serial.println("Configuration saved.");
-  }
-  configFile.close();
-}
-
-// =================================================================
-//                 WEBSOCKETS LOGIC
-// =================================================================
-// Sends current device state to all connected WebSocket clients
-void notifyClients() {
-  StaticJsonDocument doc;
-  doc["action"] = "update";
-  doc = config.ledState;
-  doc["brightness"] = config.brightness;
-  doc["timerEnabled"] = config.timerEnabled;
-  doc["onHour"] = config.onHour;
-  doc["onMinute"] = config.onMinute;
-  doc["offHour"] = config.offHour;
-  doc["offMinute"] = config.offMinute;
-  
-  char buffer;
-  size_t len = serializeJson(doc, buffer);
-  ws.textAll(buffer, len);
-}
-
-// Handles incoming WebSocket messages
-void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
-  AwsFrameInfo *info = (AwsFrameInfo*)arg;
-  if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-    StaticJsonDocument doc;
-    DeserializationError error = deserializeJson(doc, (char*)data);
-    if (error) {
-      Serial.print("deserializeJson() failed: ");
-      Serial.println(error.c_str());
-      return;
-    }
-
-    const char* action = doc["action"];
-
-    if (strcmp(action, "toggle") == 0) {
-      config.ledState = doc["state"];
-      setLedOutput(config.ledState, config.brightness);
-      saveConfiguration("/config.json", config);
-    } else if (strcmp(action, "brightness") == 0) {
-      config.brightness = doc["value"];
-      if (config.ledState) {
-        setLedOutput(true, config.brightness);
-      }
-      saveConfiguration("/config.json", config);
-    } else if (strcmp(action, "updateTimer") == 0) {
-      config.timerEnabled = doc["enabled"];
-      config.onHour = doc["onHour"];
-      config.onMinute = doc["onMinute"];
-      config.offHour = doc["offHour"];
-      config.offMinute = doc["offMinute"];
-      saveConfiguration("/config.json", config);
-    }
-    
-    notifyClients(); // Notify all clients of the change
-  }
-}
-
-// WebSocket event handler
-void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
-  switch (type) {
-    case WS_EVT_CONNECT:
-      Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
-      // Send current state to the newly connected client
-      notifyClients();
-      break;
-    case WS_EVT_DISCONNECT:
-      Serial.printf("WebSocket client #%u disconnected\n", client->id());
-      break;
-    case WS_EVT_DATA:
-      handleWebSocketMessage(arg, data, len);
-      break;
-    case WS_EVT_PONG:
-    case WS_EVT_ERROR:
-      break;
-  }
-}
-
-// =================================================================
-//                 WiFiManager CALLBACK
-// =================================================================
 void saveConfigCallback() {
-  Serial.println("Entered save config callback");
+  Serial.println("Should save config");
   shouldSaveConfig = true;
 }
 
-// =================================================================
-//                 SETUP FUNCTION
-// =================================================================
-void setup() {
-  Serial.begin(115200);
-  pinMode(PWM_OUTPUT_PIN, OUTPUT);
-  pinMode(CONFIG_TRIGGER_PIN, INPUT_PULLUP);
-
-  // --- Filesystem & Config Loading ---
-  loadConfiguration("/config.json", config);
-
-  // --- WiFiManager Setup ---
-  WiFiManager wifiManager;
-  wifiManager.setSaveConfigCallback(saveConfigCallback);
-  
-  // Add custom parameter for device name
-  WiFiManagerParameter custom_device_name("deviceName", "Device Name", config.deviceName, 32);
-  wifiManager.addParameter(&custom_device_name);
-
-  // Set a timeout for the portal
-  wifiManager.setConfigPortalTimeout(180);
-
-  // Check if config portal is requested
-  if (digitalRead(CONFIG_TRIGGER_PIN) == LOW) {
-    Serial.println("Config button pressed. Starting portal.");
-    if (!wifiManager.startConfigPortal("LEDBar-Setup")) {
-      Serial.println("Failed to connect and hit timeout");
-      ESP.restart();
+void saveConfiguration(const char *filename, const Config &conf) {
+    LittleFS.remove(filename);
+    File file = LittleFS.open(filename, "w");
+    if (!file) {
+        Serial.println("Failed to create config file for writing");
+        return;
     }
-  } else {
-    // Set hostname before connecting
-    WiFi.hostname(config.deviceName);
-    wifiManager.autoConnect("LEDBar-Setup");
-  }
 
-  // --- Save config if changed via portal ---
-  if (shouldSaveConfig) {
-    strcpy(config.deviceName, custom_device_name.getValue());
-    saveConfiguration("/config.json", config);
-  }
+    StaticJsonDocument<1024> doc;
 
-  // --- Post-Connection Setup ---
-  Serial.println("");
-  Serial.println("WiFi connected!");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-  Serial.print("Hostname: ");
-  Serial.println(WiFi.hostname());
+    doc["deviceName"] = conf.deviceName;
+    doc["brightness"] = conf.brightness;
+    doc["state"] = conf.state;
+    doc["timerEnabled"] = conf.timerEnabled;
+    doc["onTime"] = conf.onTime;
+    doc["offTime"] = conf.offTime;
 
-  // --- mDNS Setup ---
-  if (MDNS.begin(config.deviceName)) {
-    MDNS.addService("http", "tcp", 80);
-    Serial.printf("mDNS responder started. Access at http://%s.local\n", config.deviceName);
-  }
+    if (serializeJson(doc, file) == 0) {
+        Serial.println("Failed to write to config file");
+    } else {
+        Serial.println("Configuration saved");
+    }
+    file.close();
+}
 
-  // --- NTP Client Setup ---
-  timeClient.begin();
+void loadConfiguration(const char *filename, Config &conf) {
+    if (LittleFS.exists(filename)) {
+        File file = LittleFS.open(filename, "r");
+        
+        StaticJsonDocument<1024> doc;
 
-  // --- Web Server & WebSocket Setup ---
-  ws.onEvent(onEvent);
-  server.addHandler(&ws);
+        DeserializationError error = deserializeJson(doc, file);
+        if (error) {
+            Serial.println("Failed to read config file, using default configuration");
+            return;
+        }
 
-  server.on("/", HTTP_GET,(AsyncWebServerRequest *request){
-    request->send(LittleFS, "/index.html", "text/html");
-  });
-  server.serveStatic("/", LittleFS, "/");
+        strlcpy(conf.deviceName, doc["deviceName"] | "ledbar", sizeof(conf.deviceName));
+        conf.brightness = doc["brightness"] | 255;
+        conf.state = doc["state"] | true;
+        conf.timerEnabled = doc["timerEnabled"] | false;
+        strlcpy(conf.onTime, doc["onTime"] | "07:00", sizeof(conf.onTime));
+        strlcpy(conf.offTime, doc["offTime"] | "23:00", sizeof(conf.offTime));
 
-  server.begin();
-  Serial.println("HTTP server started.");
+        file.close();
+        Serial.println("Configuration loaded");
+    } else {
+        Serial.println("Config file not found, using default configuration");
+    }
+}
 
-  // --- Set initial LED state ---
-  setLedOutput(config.ledState, config.brightness);
+
+// =================================================================
+// WebSocket and LED Control
+// =================================================================
+
+void notifyClients() {
+    StaticJsonDocument<1024> doc;
+    doc["state"] = config.state;
+    doc["brightness"] = config.brightness;
+    doc["timerEnabled"] = config.timerEnabled;
+    doc["onTime"] = config.onTime;
+    doc["offTime"] = config.offTime;
+    
+    char buffer[1024];
+    size_t len = serializeJson(doc, buffer);
+
+    ws.textAll(buffer, len);
+}
+
+void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
+    AwsFrameInfo *info = (AwsFrameInfo*)arg;
+    if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
+        StaticJsonDocument<1024> doc;
+        DeserializationError error = deserializeJson(doc, data, len);
+        if (error) {
+            Serial.print("deserializeJson() failed: ");
+            Serial.println(error.c_str());
+            return;
+        }
+
+        if (doc.containsKey("state")) {
+            config.state = doc["state"].as<bool>();
+        }
+        if (doc.containsKey("brightness")) {
+            config.brightness = doc["brightness"].as<int>();
+        }
+        if (doc.containsKey("timerEnabled")) {
+            config.timerEnabled = doc["timerEnabled"].as<bool>();
+            setupTimers(); // Re-evaluate timers
+        }
+        if (doc.containsKey("onTime")) {
+            strlcpy(config.onTime, doc["onTime"], sizeof(config.onTime));
+            setupTimers(); // Re-evaluate timers
+        }
+        if (doc.containsKey("offTime")) {
+            strlcpy(config.offTime, doc["offTime"], sizeof(config.offTime));
+            setupTimers(); // Re-evaluate timers
+        }
+
+        setLed(config.state, config.brightness);
+        shouldSaveConfig = true; // Flag to save changes
+        notifyClients();
+    }
+}
+
+void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+    switch (type) {
+        case WS_EVT_CONNECT:
+            Serial.printf("WebSocket client #%u connected from %s\n", client->id(), client->remoteIP().toString().c_str());
+            notifyClients(); // Send current state to newly connected client
+            break;
+        case WS_EVT_DISCONNECT:
+            Serial.printf("WebSocket client #%u disconnected\n", client->id());
+            break;
+        case WS_EVT_DATA:
+            handleWebSocketMessage(arg, data, len);
+            break;
+        case WS_EVT_PONG:
+        case WS_EVT_ERROR:
+            break;
+    }
+}
+
+void setLed(bool newState, int newBrightness) {
+    config.state = newState;
+    config.brightness = newBrightness;
+
+    if (!config.state) { // If state is OFF
+        analogWrite(PWM_OUTPUT_PIN, PWM_RANGE); // BJT ON -> MOSFET Gate LOW -> LED OFF
+    } else {
+        int pwmValue = PWM_RANGE - newBrightness; // Invert brightness for the driver
+        analogWrite(PWM_OUTPUT_PIN, pwmValue); // BJT OFF -> MOSFET Gate HIGH -> LED ON (at brightness)
+    }
+}
+
+
+// =================================================================
+// Time and Timer (Scheduler) Functions
+// =================================================================
+
+void setupTime() {
+    // As you're in Pune, India, the timezone is IST (UTC+5:30)
+    // seconds from UTC = 5.5 * 3600 = 19800
+    configTime(19800, 0, "pool.ntp.org", "time.nist.gov");
+    Serial.print("Waiting for NTP time sync: ");
+    time_t now = time(nullptr);
+    while (now < 8 * 3600 * 2) {
+        delay(500);
+        Serial.print(".");
+        now = time(nullptr);
+    }
+    Serial.println("");
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    Serial.print("Current time: ");
+    Serial.println(asctime(&timeinfo));
+}
+
+void digitalClockDisplay() {
+  time_t now = time(nullptr);
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);
+  Serial.printf("%02d:%02d:%02d\n", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+}
+
+void triggerLedOn() {
+    Serial.println("Timer: ON");
+    if (config.timerEnabled) {
+        setLed(true, config.brightness);
+        notifyClients();
+        shouldSaveConfig = true;
+    }
+}
+
+void triggerLedOff() {
+    Serial.println("Timer: OFF");
+    if (config.timerEnabled) {
+        setLed(false, config.brightness);
+        notifyClients();
+        shouldSaveConfig = true;
+    }
+}
+
+void setupTimers() {
+    // FIX 2: Free the old alarms before creating new ones.
+    if (onTimerId != dtINVALID_ALARM_ID) {
+        Alarm.free(onTimerId);
+    }
+    if (offTimerId != dtINVALID_ALARM_ID) {
+        Alarm.free(offTimerId);
+    }
+
+    if (config.timerEnabled) {
+        int onHour, onMin, offHour, offMin;
+        sscanf(config.onTime, "%d:%d", &onHour, &onMin);
+        sscanf(config.offTime, "%d:%d", &offHour, &offMin);
+
+        // FIX 2: Store the new alarm IDs
+        onTimerId = Alarm.alarmRepeat(onHour, onMin, 0, triggerLedOn);
+        offTimerId = Alarm.alarmRepeat(offHour, offMin, 0, triggerLedOff);
+        
+        Serial.printf("Timers set. ON: %s (ID: %d), OFF: %s (ID: %d)\n", config.onTime, onTimerId, config.offTime, offTimerId);
+    } else {
+        Serial.println("Timers disabled.");
+    }
+}
+
+
+// =================================================================
+// Setup
+// =================================================================
+
+void setup() {
+    Serial.begin(115200);
+    Serial.println("\n\nBooting...");
+
+    pinMode(PWM_OUTPUT_PIN, OUTPUT);
+    pinMode(CONFIG_RESET_PIN, INPUT_PULLUP);
+    analogWriteRange(PWM_RANGE);
+
+    if (!LittleFS.begin()) {
+        Serial.println("An Error has occurred while mounting LittleFS");
+        return;
+    }
+    
+    loadConfiguration("/config.json", config);
+    setLed(config.state, config.brightness);
+
+    wm.setSaveConfigCallback(saveConfigCallback);
+    WiFiManagerParameter custom_device_name("deviceName", "Device Name", config.deviceName, 32);
+    wm.addParameter(&custom_device_name);
+
+    wm.setConfigPortalTimeout(180); // 3 minutes
+
+    if (digitalRead(CONFIG_RESET_PIN) == LOW) {
+        Serial.println("Reset pin is active. Starting configuration portal.");
+        if (!wm.startConfigPortal("LED-Bar-Setup")) {
+            Serial.println("Failed to connect and hit timeout");
+            delay(3000);
+            ESP.restart();
+        }
+    } else {
+        wm.setConnectTimeout(30);
+        if (!wm.autoConnect("LED-Bar-Setup")) {
+            Serial.println("Failed to connect to saved WiFi. Restarting.");
+            delay(3000);
+            ESP.restart();
+        }
+    }
+
+    if (shouldSaveConfig) {
+        strcpy(config.deviceName, custom_device_name.getValue());
+        saveConfiguration("/config.json", config);
+    }
+    
+    WiFi.hostname(config.deviceName); 
+    if (MDNS.begin(config.deviceName)) {
+        Serial.printf("mDNS responder started. Access at http://%s.local\n", config.deviceName);
+        MDNS.addService("http", "tcp", 80);
+    } else {
+        Serial.println("Error setting up MDNS responder!");
+    }
+
+    setupTime();
+    setupTimers();
+    ws.onEvent(onEvent);
+    server.addHandler(&ws);
+
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(LittleFS, "/index.html", "text/html");
+    });
+
+    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(LittleFS, "/style.css", "text/css");
+    });
+    
+    server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(404);
+    });
+
+    server.onNotFound([](AsyncWebServerRequest *request){
+        request->send(404, "text/plain", "Not found");
+    });
+
+    server.begin();
+    Serial.println("HTTP server started.");
 }
 
 // =================================================================
-//                 MAIN LOOP
+// Main Loop
 // =================================================================
+long lastSave = 0;
 void loop() {
-  ws.cleanupClients();
-  MDNS.update();
+    ws.cleanupClients();
+    MDNS.update();
+    Alarm.delay(1000); // Process timers
 
-  // --- Scheduler Logic (runs roughly every second) ---
-  static unsigned long lastTimeCheck = 0;
-  if (millis() - lastTimeCheck > 1000) {
-    lastTimeCheck = millis();
-    
-    if (WiFi.status() == WL_CONNECTED) {
-      timeClient.update();
-      
-      int currentHour = timeClient.getHours();
-      int currentMinute = timeClient.getMinutes();
-
-      // Reset daily triggers at midnight
-      if (currentHour == 0 && currentMinute == 0) {
-        onActionTriggered = false;
-        offActionTriggered = false;
-      }
-
-      if (config.timerEnabled) {
-        // Check for ON time
-        if (currentHour == config.onHour && currentMinute == config.onMinute &&!onActionTriggered) {
-          if (!config.ledState) { // Only act if it's currently off
-            Serial.println("Timer: Turning LED ON");
-            config.ledState = true;
-            setLedOutput(true, config.brightness);
-            saveConfiguration("/config.json", config);
-            notifyClients();
-          }
-          onActionTriggered = true;
-        }
-
-        // Check for OFF time
-        if (currentHour == config.offHour && currentMinute == config.offMinute &&!offActionTriggered) {
-          if (config.ledState) { // Only act if it's currently on
-            Serial.println("Timer: Turning LED OFF");
-            config.ledState = false;
-            setLedOutput(false, 0);
-            saveConfiguration("/config.json", config);
-            notifyClients();
-          }
-          offActionTriggered = true;
-        }
-      }
+    if (shouldSaveConfig && (millis() - lastSave > 5000)) {
+        saveConfiguration("/config.json", config);
+        shouldSaveConfig = false;
+        lastSave = millis();
     }
-  }
+
+    if (digitalRead(CONFIG_RESET_PIN) == LOW) {
+        delay(100); // Debounce
+        if (digitalRead(CONFIG_RESET_PIN) == LOW) {
+            Serial.println("Reset pin activated. Restarting and entering config mode.");
+            wm.resetSettings();
+            delay(1000);
+            ESP.restart();
+        }
+    }
 }
