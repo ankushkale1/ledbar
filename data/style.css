@@ -1,0 +1,14 @@
+/*
+ * Bootswatch: Darkly
+ * Version: 5.3.3
+ * https://bootswatch.com/darkly/
+ *
+ * (Full CSS content from the downloaded bootswatch.min.css file goes here)
+ */
+
+/* Custom Styles */
+.form-check-input {
+    width: 3em;
+    height: 1.5em;
+    cursor: pointer;
+}
