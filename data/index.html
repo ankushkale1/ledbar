@@ -1,149 +1,248 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-<head>
-    <meta charset="UTF--8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LED Control</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/style.css">
-</head>
-<body>
-    <div class="container my-4">
-        <div class="card bg-dark-subtle text-light">
-            <div class="card-header text-center">
-                <h2>LED Light Bar Control</h2>
-            </div>
-            <div class="card-body">
-                <div class="mb-4 text-center">
-                    <div class="form-check form-switch d-inline-block">
-                        <input class="form-check-input" type="checkbox" role="switch" id="ledStateSwitch">
-                        <label class="form-check-label" for="ledStateSwitch" id="ledStateLabel">LED is OFF</label>
-                    </div>
-                </div>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ESP8266 LED Controller</title>
+    <style>
+      :root {
+        --bg-color: #1a1a2e;
+        --card-bg-color: #16213e;
+        --primary-color: #0f3460;
+        --accent-color: #e94560;
+        --text-color: #e0e0e0;
+        --text-secondary-color: #a0a0a0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+      }
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+        padding: 1rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 500px;
+        width: 100%;
+      }
+      .card {
+        background-color: var(--card-bg-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      /*... More styles for h1, labels, etc.... */
 
-                <div class="mb-4">
-                    <label for="brightnessSlider" class="form-label">Brightness: <span id="brightnessValue">0</span></label>
-                    <input type="range" class="form-range" id="brightnessSlider" min="0" max="255" step="1">
-                </div>
+      /* Custom Toggle Switch */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+      }
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+      }
+      .slider.round {
+        border-radius: 34px;
+      }
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 26px;
+        width: 26px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+      }
+      .slider.round:before {
+        border-radius: 50%;
+      }
+      input:checked + .slider {
+        background-color: var(--accent-color);
+      }
+      input:checked + .slider:before {
+        transform: translateX(26px);
+      }
 
-                <hr>
-                <div class="mt-4">
-                    <h4 class="text-center mb-3">Timer Settings</h4>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch" id="timerEnabledSwitch">
-                        <label class="form-check-label" for="timerEnabledSwitch">Enable Timer</label>
-                    </div>
-                    <div id="timerControls" class="d-none">
-                        <div class="row g-3 align-items-center">
-                            <div class="col-auto">
-                                <label for="onTime" class="col-form-label">ON Time</label>
-                            </div>
-                            <div class="col">
-                                <input type="time" id="onTime" class="form-control">
-                            </div>
-                            <div class="col-auto">
-                                <label for="offTime" class="col-form-label">OFF Time</label>
-                            </div>
-                            <div class="col">
-                                <input type="time" id="offTime" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+      /* Custom Brightness Slider */
+      .brightness-slider {
+        -webkit-appearance: none;
+        width: calc(100% - 60px);
+        height: 15px;
+        background: #ddd;
+        outline: none;
+        opacity: 0.7;
+        transition: opacity.2s;
+        border-radius: 5px;
+      }
+      .brightness-slider:hover {
+        opacity: 1;
+      }
+      .brightness-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        background: var(--accent-color);
+        cursor: pointer;
+        border-radius: 50%;
+      }
+      .brightness-slider::-moz-range-thumb {
+        width: 25px;
+        height: 25px;
+        background: var(--accent-color);
+        cursor: pointer;
+        border-radius: 50%;
+      }
+    </style>
     <script>
-        const gateway = `ws://${window.location.hostname}/ws`;
-        let websocket;
+      document.addEventListener("DOMContentLoaded", () => {
+        // --- Element References ---
+        const ledToggle = document.getElementById("led-toggle");
+        const brightnessSlider = document.getElementById("brightness-slider");
+        const brightnessValue = document.getElementById("brightness-value");
+        const scheduleToggle = document.getElementById("schedule-toggle");
+        const startTimeInput = document.getElementById("start-time");
+        const endTimeInput = document.getElementById("end-time");
 
-        // UI Elements
-        const ledStateSwitch = document.getElementById('ledStateSwitch');
-        const ledStateLabel = document.getElementById('ledStateLabel');
-        const brightnessSlider = document.getElementById('brightnessSlider');
-        const brightnessValue = document.getElementById('brightnessValue');
-        const timerEnabledSwitch = document.getElementById('timerEnabledSwitch');
-        const timerControls = document.getElementById('timerControls');
-        const onTimeInput = document.getElementById('onTime');
-        const offTimeInput = document.getElementById('offTime');
+        let isUpdating = false; // A flag to prevent event loops
 
-        window.addEventListener('load', onLoad);
-
-        function onLoad() {
-            initWebSocket();
-        }
-
-        function initWebSocket() {
-            console.log('Trying to open a WebSocket connection...');
-            websocket = new WebSocket(gateway);
-            websocket.onopen = onOpen;
-            websocket.onclose = onClose;
-            websocket.onmessage = onMessage;
-        }
-
-        function onOpen(event) {
-            console.log('Connection opened');
-        }
-
-        function onClose(event) {
-            console.log('Connection closed');
-            setTimeout(initWebSocket, 2000);
-        }
-
-        function sendData(data) {
-            websocket.send(JSON.stringify(data));
-        }
-
-        function onMessage(event) {
-            console.log(event.data);
-            const data = JSON.parse(event.data);
-
-            // Update LED State
-            ledStateSwitch.checked = data.state;
-            ledStateLabel.textContent = data.state ? 'LED is ON' : 'LED is OFF';
-            brightnessSlider.disabled = !data.state;
-
-            // Update Brightness
-            brightnessSlider.value = data.brightness;
-            brightnessValue.textContent = data.brightness;
-
-            // Update Timer
-            timerEnabledSwitch.checked = data.timerEnabled;
-            if (data.timerEnabled) {
-                timerControls.classList.remove('d-none');
-            } else {
-                timerControls.classList.add('d-none');
+        // --- API Communication ---
+        async function sendSettings(settings) {
+          try {
+            const response = await fetch("/settings", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: new URLSearchParams(settings),
+            });
+            if (!response.ok) {
+              console.error("Failed to send settings");
             }
-            onTimeInput.value = data.onTime;
-            offTimeInput.value = data.offTime;
+          } catch (error) {
+            console.error("Error sending settings:", error);
+          }
         }
 
-        // Event Listeners
-        ledStateSwitch.addEventListener('change', () => {
-            sendData({ state: ledStateSwitch.checked });
+        async function updateStatus() {
+          if (isUpdating) return; // Don't fetch if we are in the middle of an update
+          try {
+            const response = await fetch("/status");
+            const data = await response.json();
+
+            isUpdating = true; // Set flag to prevent triggering sendSettings on update
+            ledToggle.checked = data.state;
+            brightnessSlider.value = data.brightness;
+            brightnessValue.textContent = `${data.brightness}%`;
+            scheduleToggle.checked = data.sch_en;
+            startTimeInput.value = data.sch_s;
+            endTimeInput.value = data.sch_e;
+            isUpdating = false; // Reset flag
+          } catch (error) {
+            console.error("Error fetching status:", error);
+            isUpdating = false; // Ensure flag is reset on error
+          }
+        }
+
+        // --- Event Listeners ---
+        ledToggle.addEventListener("change", () => {
+          if (isUpdating) return;
+          sendSettings({ state: ledToggle.checked });
         });
 
-        brightnessSlider.addEventListener('input', () => {
-            brightnessValue.textContent = brightnessSlider.value;
+        brightnessSlider.addEventListener("input", () => {
+          brightnessValue.textContent = `${brightnessSlider.value}%`;
         });
 
-        brightnessSlider.addEventListener('change', () => {
-            sendData({ brightness: parseInt(brightnessSlider.value) });
+        brightnessSlider.addEventListener("change", () => {
+          if (isUpdating) return;
+          sendSettings({ brightness: brightnessSlider.value });
         });
 
-        timerEnabledSwitch.addEventListener('change', () => {
-            sendData({ timerEnabled: timerEnabledSwitch.checked });
+        scheduleToggle.addEventListener("change", () => {
+          if (isUpdating) return;
+          sendSettings({ scheduleEnabled: scheduleToggle.checked });
         });
 
-        onTimeInput.addEventListener('change', () => {
-            sendData({ onTime: onTimeInput.value });
+        startTimeInput.addEventListener("change", () => {
+          if (isUpdating) return;
+          sendSettings({ startTime: startTimeInput.value });
         });
 
-        offTimeInput.addEventListener('change', () => {
-            sendData({ offTime: offTimeInput.value });
+        endTimeInput.addEventListener("change", () => {
+          if (isUpdating) return;
+          sendSettings({ endTime: endTimeInput.value });
         });
 
+        // --- Initial Load and Polling ---
+        updateStatus(); // Initial fetch to sync UI with device state
+        setInterval(updateStatus, 3000); // Poll for status every 3 seconds
+      });
     </script>
-</body>
+  </head>
+  <body>
+    <div class="container">
+      <h1>ESP8266 LED Controller</h1>
+
+      <div class="card">
+        <h2>Master Control</h2>
+        <div class="control-group">
+          <label for="led-toggle">Power</label>
+          <label class="switch">
+            <input type="checkbox" id="led-toggle" />
+            <span class="slider round"></span>
+          </label>
+        </div>
+        <div class="control-group">
+          <label for="brightness-slider">Brightness</label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value="100"
+            class="brightness-slider"
+            id="brightness-slider"
+          />
+          <span id="brightness-value">100%</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Scheduler</h2>
+        <div class="control-group">
+          <label for="schedule-toggle">Enable Schedule</label>
+          <label class="switch">
+            <input type="checkbox" id="schedule-toggle" />
+            <span class="slider round"></span>
+          </label>
+        </div>
+        <div class="control-group">
+          <label for="start-time">On Time</label>
+          <input type="time" id="start-time" />
+        </div>
+        <div class="control-group">
+          <label for="end-time">Off Time</label>
+          <input type="time" id="end-time" />
+        </div>
+      </div>
+    </div>
+  </body>
 </html>
