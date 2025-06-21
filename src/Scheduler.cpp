@@ -44,8 +44,7 @@ SchedulerAction Scheduler::checkSchedule(int currentHour, int currentMinute, boo
         }
     } else {
         // Overnight schedule (e.g., 22:00 to 06:00)
-        if (nowInMinutes >= startInMinutes |
-| nowInMinutes < endInMinutes) {
+        if (nowInMinutes >= startInMinutes || nowInMinutes < endInMinutes) {
             shouldBeOn = true;
         }
     }

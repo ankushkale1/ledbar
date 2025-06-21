@@ -12,8 +12,7 @@ void TimeManager::begin() {
 
 void TimeManager::update() {
     // Only update from NTP server periodically to reduce network traffic
-    if (millis() - _lastNtpUpdateTime > NTP_UPDATE_INTERVAL |
-| _lastNtpUpdateTime == 0) {
+    if (millis() - _lastNtpUpdateTime > NTP_UPDATE_INTERVAL || _lastNtpUpdateTime == 0) {
         if (_timeClient.forceUpdate()) {
             _lastNtpUpdateTime = millis();
             Serial.print(" NTP time updated: ");

@@ -17,7 +17,7 @@ const int STATUS_LED_PIN = D4;    // On-board LED used for status (GPIO2)
 
 // --- Global Object Instantiation ---
 SettingsManager settingsManager;
-LedController ledController(PWM_LED_PIN);
+LedController ledController(PWM_LED_PIN, true);
 WiFiConnector wifiConnector(WIFI_SSID, WIFI_PASSWORD, STATUS_LED_PIN);
 TimeManager timeManager;
 Scheduler scheduler;
