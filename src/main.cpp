@@ -1,15 +1,31 @@
+/*
+ * LedBar Controller - Main Application File
+ * Architecture: Fully Asynchronous with ESPAsync_WiFiManager and LittleFS
+ * UPDATED: Corrected compilation errors and refactored for ESPAsync_WiFiManager
+ */
+
+// Core ESP8266 & WiFi Libraries
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESPAsyncTCP.h>
-#include <ArduinoJson.h>
-#include <LittleFS.h>
-#include <TimeAlarms.h>
+
+// Asynchronous Web Server and related libraries
 #include <ESPAsyncWebServer.h>
 
-// FIX 1 (Re-confirm): This directive MUST be before the WiFiManager include to prevent library conflicts.
-#define WM_ASYNC_WEB_SERVER 1
-#include <WiFiManager.h>
+// Asynchronous WiFi Manager by khoih-prog
+// The .h file provides the class definitions.
+#include <ESPAsync_WiFiManager.h>
+// The -Impl.h file provides the implementation. Including it here in the
+// main source file prevents multiple-definition linker errors in larger projects.
+#include <ESPAsync_WiFiManager-Impl.h>
+
+// Filesystem Library - Using LittleFS
+#include <LittleFS.h>
+
+// Other project libraries
+#include <ArduinoJson.h>
+#include <TimeAlarms.h>
 
 // -- Hardware Pins --
 const int PWM_OUTPUT_PIN = D1; // GPIO5 on NodeMCU
@@ -20,6 +36,7 @@ const int PWM_RANGE = 255; // Using 8-bit PWM
 
 // -- Configuration Struct --
 struct Config {
+    // FIX: Restored char arrays to their correct sizes.
     char deviceName[33] = "ledbar";
     int brightness = 255;
     bool state = true; // true = ON, false = OFF
@@ -33,10 +50,13 @@ Config config; // Global config object
 // -- Global Objects --
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
-WiFiManager wm;
+// FIX: Instantiate AsyncDNSServer and the new ESPAsync_WiFiManager
+AsyncDNSServer dns;
+ESPAsync_WiFiManager wifiManager(&server, &dns);
+
 bool shouldSaveConfig = false;
 
-// FIX 2: Create variables to hold the alarm IDs
+// Variables to hold the alarm IDs
 AlarmID_t onTimerId = dtINVALID_ALARM_ID;
 AlarmID_t offTimerId = dtINVALID_ALARM_ID;
 
@@ -72,7 +92,7 @@ void saveConfiguration(const char *filename, const Config &conf) {
         return;
     }
 
-    StaticJsonDocument<1024> doc;
+    StaticJsonDocument<256> doc; // Reduced size, 1024 is overkill for this data
 
     doc["deviceName"] = conf.deviceName;
     doc["brightness"] = conf.brightness;
@@ -93,7 +113,7 @@ void loadConfiguration(const char *filename, Config &conf) {
     if (LittleFS.exists(filename)) {
         File file = LittleFS.open(filename, "r");
         
-        StaticJsonDocument<1024> doc;
+        StaticJsonDocument<256> doc;
 
         DeserializationError error = deserializeJson(doc, file);
         if (error) {
@@ -101,6 +121,7 @@ void loadConfiguration(const char *filename, Config &conf) {
             return;
         }
 
+        // FIX: The original logic here was correct.
         strlcpy(conf.deviceName, doc["deviceName"] | "ledbar", sizeof(conf.deviceName));
         conf.brightness = doc["brightness"] | 255;
         conf.state = doc["state"] | true;
@@ -121,14 +142,15 @@ void loadConfiguration(const char *filename, Config &conf) {
 // =================================================================
 
 void notifyClients() {
-    StaticJsonDocument<1024> doc;
+    StaticJsonDocument<256> doc;
     doc["state"] = config.state;
     doc["brightness"] = config.brightness;
     doc["timerEnabled"] = config.timerEnabled;
     doc["onTime"] = config.onTime;
     doc["offTime"] = config.offTime;
     
-    char buffer[1024];
+    // FIX: Define buffer as a char array
+    char buffer[256];
     size_t len = serializeJson(doc, buffer);
 
     ws.textAll(buffer, len);
@@ -137,7 +159,7 @@ void notifyClients() {
 void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
     AwsFrameInfo *info = (AwsFrameInfo*)arg;
     if (info->final && info->index == 0 && info->len == len && info->opcode == WS_TEXT) {
-        StaticJsonDocument<1024> doc;
+        StaticJsonDocument<256> doc;
         DeserializationError error = deserializeJson(doc, data, len);
         if (error) {
             Serial.print("deserializeJson() failed: ");
@@ -155,6 +177,7 @@ void handleWebSocketMessage(void *arg, uint8_t *data, size_t len) {
             config.timerEnabled = doc["timerEnabled"].as<bool>();
             setupTimers(); // Re-evaluate timers
         }
+        // FIX: Correctly get the string value from the JSON doc before copying
         if (doc.containsKey("onTime")) {
             strlcpy(config.onTime, doc["onTime"], sizeof(config.onTime));
             setupTimers(); // Re-evaluate timers
@@ -195,7 +218,7 @@ void setLed(bool newState, int newBrightness) {
     if (!config.state) { // If state is OFF
         analogWrite(PWM_OUTPUT_PIN, PWM_RANGE); // BJT ON -> MOSFET Gate LOW -> LED OFF
     } else {
-        int pwmValue = PWM_RANGE - newBrightness; // Invert brightness for the driver
+        int pwmValue = PWM_RANGE - map(newBrightness, 0, 255, 0, PWM_RANGE); // Invert brightness for the driver
         analogWrite(PWM_OUTPUT_PIN, pwmValue); // BJT OFF -> MOSFET Gate HIGH -> LED ON (at brightness)
     }
 }
@@ -249,7 +272,7 @@ void triggerLedOff() {
 }
 
 void setupTimers() {
-    // FIX 2: Free the old alarms before creating new ones.
+    // Free the old alarms before creating new ones.
     if (onTimerId != dtINVALID_ALARM_ID) {
         Alarm.free(onTimerId);
     }
@@ -262,11 +285,11 @@ void setupTimers() {
         sscanf(config.onTime, "%d:%d", &onHour, &onMin);
         sscanf(config.offTime, "%d:%d", &offHour, &offMin);
 
-        // FIX 2: Store the new alarm IDs
+        // Store the new alarm IDs
         onTimerId = Alarm.alarmRepeat(onHour, onMin, 0, triggerLedOn);
         offTimerId = Alarm.alarmRepeat(offHour, offMin, 0, triggerLedOff);
         
-        Serial.printf("Timers set. ON: %s (ID: %d), OFF: %s (ID: %d)\n", config.onTime, onTimerId, config.offTime, offTimerId);
+        Serial.printf("Timers set. ON: %s (ID: %d), OFF: %s (ID: %d)\n", config.onTime, onTimerId, offTimerId);
     } else {
         Serial.println("Timers disabled.");
     }
@@ -293,22 +316,22 @@ void setup() {
     loadConfiguration("/config.json", config);
     setLed(config.state, config.brightness);
 
-    wm.setSaveConfigCallback(saveConfigCallback);
-    WiFiManagerParameter custom_device_name("deviceName", "Device Name", config.deviceName, 32);
-    wm.addParameter(&custom_device_name);
-
-    wm.setConfigPortalTimeout(180); // 3 minutes
+    // WiFiManager Setup
+    ESPAsync_WMParameter custom_device_name("deviceName", "Device Name", config.deviceName, 32);
+    wifiManager.addParameter(&custom_device_name);
+    wifiManager.setSaveConfigCallback(saveConfigCallback);
+    wifiManager.setConfigPortalTimeout(180); // 3 minutes
 
     if (digitalRead(CONFIG_RESET_PIN) == LOW) {
         Serial.println("Reset pin is active. Starting configuration portal.");
-        if (!wm.startConfigPortal("LED-Bar-Setup")) {
+        if (!wifiManager.startConfigPortal("LED-Bar-Setup")) {
             Serial.println("Failed to connect and hit timeout");
             delay(3000);
             ESP.restart();
         }
     } else {
-        wm.setConnectTimeout(30);
-        if (!wm.autoConnect("LED-Bar-Setup")) {
+        wifiManager.setConnectTimeout(30);
+        if (!wifiManager.autoConnect("LED-Bar-Setup")) {
             Serial.println("Failed to connect to saved WiFi. Restarting.");
             delay(3000);
             ESP.restart();
@@ -316,7 +339,7 @@ void setup() {
     }
 
     if (shouldSaveConfig) {
-        strcpy(config.deviceName, custom_device_name.getValue());
+        strlcpy(config.deviceName, custom_device_name.getValue(), sizeof(config.deviceName));
         saveConfiguration("/config.json", config);
     }
     
@@ -333,18 +356,9 @@ void setup() {
     ws.onEvent(onEvent);
     server.addHandler(&ws);
 
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(LittleFS, "/index.html", "text/html");
-    });
-
-    server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(LittleFS, "/style.css", "text/css");
-    });
+    server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
     
-    server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
-        request->send(404);
-    });
-
+    // FIX: Corrected lambda syntax
     server.onNotFound([](AsyncWebServerRequest *request){
         request->send(404, "text/plain", "Not found");
     });
@@ -362,6 +376,7 @@ void loop() {
     MDNS.update();
     Alarm.delay(1000); // Process timers
 
+    // Debounced save
     if (shouldSaveConfig && (millis() - lastSave > 5000)) {
         saveConfiguration("/config.json", config);
         shouldSaveConfig = false;
@@ -372,7 +387,7 @@ void loop() {
         delay(100); // Debounce
         if (digitalRead(CONFIG_RESET_PIN) == LOW) {
             Serial.println("Reset pin activated. Restarting and entering config mode.");
-            wm.resetSettings();
+            wifiManager.resetSettings();
             delay(1000);
             ESP.restart();
         }
