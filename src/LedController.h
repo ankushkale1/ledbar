@@ -30,7 +30,7 @@ private:
     int _pin;
     bool _invertingLogic;
     // The ESP8266 has a 10-bit PWM resolution, so the range is 0-1023.
-    const int PWM_RANGE = 1023;
+    const int PWM_RANGE = 255;
 };
 
 #endif // LED_CONTROLLER_H
