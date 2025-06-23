@@ -4,6 +4,7 @@
 #include "LedController.h"
 #include "TimeManager.h"
 #include "Scheduler.h"
+#include "MDNSManager.h"
 #include "WebServerController.h"
 
 // --- Project Configuration ---
@@ -14,6 +15,7 @@ const char* WIFI_PASSWORD = "Ak@00789101112";
 // Pin Assignments
 const int PWM_LED_PIN = D1;       // LED connected to D1 (GPIO5)
 const int STATUS_LED_PIN = D4;    // On-board LED used for status (GPIO2)
+const char* MDNS_HOSTNAME = "ledbar"; // mDNS hostname for the device
 
 // --- Global Object Instantiation ---
 SettingsManager settingsManager;
@@ -21,6 +23,7 @@ LedController ledController(PWM_LED_PIN, true);
 WiFiConnector wifiConnector(WIFI_SSID, WIFI_PASSWORD, STATUS_LED_PIN);
 TimeManager timeManager;
 Scheduler scheduler;
+MDNSManager mdnsManager(MDNS_HOSTNAME);
 WebServerController webServerController(80, settingsManager, ledController, scheduler);
 
 // --- Timer for non-blocking scheduler check ---
@@ -53,8 +56,11 @@ void setup() {
     // 5. Initialize Time Manager and perform initial sync
     timeManager.begin();
     timeManager.update(); // Force initial update
+    
+    // 6. Initialize mDNS
+    mdnsManager.begin();
 
-    // 6. Initialize and start the Web Server
+    // 7. Initialize and start the Web Server
     webServerController.begin();
 
     Serial.println("[Main] Setup complete. System running.");
@@ -63,6 +69,9 @@ void setup() {
 void loop() {
     // Must be called every loop to service web requests
     webServerController.handleClient();
+
+    // Keep mDNS service active
+    mdnsManager.loop();
 
     // Manages WiFi connection state (e.g., handles reconnects)
     wifiConnector.handleConnection();
