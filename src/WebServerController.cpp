@@ -1,5 +1,6 @@
 #include "WebServerController.h"
 #include "LittleFS.h"
+#include <ArduinoJson.h>
 
 WebServerController::WebServerController(int port, SettingsManager& settingsMgr, LedController& ledCtrl, Scheduler& scheduler)
     : _server(port), _settingsManager(settingsMgr), _ledController(ledCtrl), _scheduler(scheduler) {}
@@ -29,48 +30,67 @@ void WebServerController::handleRoot() {
 }
 
 void WebServerController::handleSettings() {
+    // The web server library puts the JSON payload in the "plain" argument
+    if (_server.hasArg("plain") == false) {
+        _server.send(400, "application/json", "{\"error\":\"Body required\"}");
+        return;
+    }
+
+    String body = _server.arg("plain");
+    DynamicJsonDocument doc(1024); // Adjust size as needed for your payload
+    DeserializationError error = deserializeJson(doc, body);
+
+    if (error) {
+        Serial.print(F("[Web] deserializeJson() failed: "));
+        Serial.println(error.c_str());
+        _server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
+        return;
+    }
+
     DeviceSettings& settings = _settingsManager.getSettings();
-    bool settingsChanged = false;
 
-    if (_server.hasArg("state")) {
-        settings.ledState = (_server.arg("state") == "true");
-        settingsChanged = true;
-    }
-    if (_server.hasArg("brightness")) {
-        settings.brightness = _server.arg("brightness").toInt();
-        settingsChanged = true;
-    }
-    if (_server.hasArg("scheduleEnabled")) {
-        settings.scheduleEnabled = (_server.arg("scheduleEnabled") == "true");
-        settingsChanged = true;
-    }
-    if (_server.hasArg("startTime")) {
-        settings.startTime = _server.arg("startTime");
-        settingsChanged = true;
-    }
-    if (_server.hasArg("endTime")) {
-        settings.endTime = _server.arg("endTime");
-        settingsChanged = true;
+    // Update scheduler settings from JSON
+    settings.scheduleEnabled = doc["sch_en"];
+    settings.startTime = doc["sch_s"].as<String>();
+    settings.endTime = doc["sch_e"].as<String>();
+
+    // Update channel settings from JSON
+    JsonArray channelsArray = doc["channels"].as<JsonArray>();
+    settings.channels.clear(); // Clear old channels before adding new ones
+    for (JsonObject channelJson : channelsArray) {
+        ChannelSetting ch;
+        ch.pin = channelJson["pin"].as<String>();
+        ch.state = channelJson["state"];
+        ch.brightness = channelJson["brightness"];
+        settings.channels.push_back(ch);
     }
 
-    if (settingsChanged) {
-        _ledController.update(settings.ledState, settings.brightness);
-        _scheduler.updateSchedule(settings.scheduleEnabled, settings.startTime, settings.endTime);
-        _settingsManager.saveSettings();
-    }
+    // Apply the new settings
+    _ledController.update(settings); // Note: LedController needs refactoring for multi-channel
+    _scheduler.updateSchedule(settings.scheduleEnabled, settings.startTime, settings.endTime);
+    _settingsManager.saveSettings();
 
     _server.send(200, "application/json", "{\"success\":true}");
 }
 
 void WebServerController::handleStatus() {
     DeviceSettings& settings = _settingsManager.getSettings();
-    String json = "{";
-    json += "\"state\":" + String(settings.ledState? "true" : "false") + ",";
-    json += "\"brightness\":" + String(settings.brightness) + ",";
-    json += "\"sch_en\":" + String(settings.scheduleEnabled? "true" : "false") + ",";
-    json += "\"sch_s\":\"" + settings.startTime + "\",";
-    json += "\"sch_e\":\"" + settings.endTime + "\"";
-    json += "}";
+    DynamicJsonDocument doc(1024); // Adjust size as needed
+
+    doc["sch_en"] = settings.scheduleEnabled;
+    doc["sch_s"] = settings.startTime;
+    doc["sch_e"] = settings.endTime;
+
+    JsonArray channels = doc.createNestedArray("channels");
+    for (const auto& ch_setting : settings.channels) {
+        JsonObject channel = channels.createNestedObject();
+        channel["pin"] = ch_setting.pin;
+        channel["state"] = ch_setting.state;
+        channel["brightness"] = ch_setting.brightness;
+    }
+
+    String json;
+    serializeJson(doc, json);
     _server.send(200, "application/json", json);
 }
 

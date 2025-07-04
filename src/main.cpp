@@ -13,13 +13,12 @@ const char* WIFI_SSID = "JioFiber-4G";
 const char* WIFI_PASSWORD = "Ak@00789101112";
 
 // Pin Assignments
-const int PWM_LED_PIN = D1;       // LED connected to D1 (GPIO5)
 const int STATUS_LED_PIN = D4;    // On-board LED used for status (GPIO2)
 const char* MDNS_HOSTNAME = "ledbar"; // mDNS hostname for the device
 
 // --- Global Object Instantiation ---
 SettingsManager settingsManager;
-LedController ledController(PWM_LED_PIN, true);
+LedController ledController(true); // true for inverted logic (active-low LEDs)
 WiFiConnector wifiConnector(WIFI_SSID, WIFI_PASSWORD, STATUS_LED_PIN);
 TimeManager timeManager;
 Scheduler scheduler;
@@ -40,7 +39,7 @@ void setup() {
 
     // 2. Initialize LED controller and apply loaded settings
     ledController.begin();
-    ledController.update(settings.ledState, settings.brightness);
+    ledController.update(settings);
 
     // 3. Initialize Scheduler with loaded settings
     scheduler.updateSchedule(settings.scheduleEnabled, settings.startTime, settings.endTime);
@@ -87,25 +86,30 @@ void loop() {
 
         if (wifiConnector.isConnected()) {
             DeviceSettings& settings = settingsManager.getSettings();
-            
+
+            // Check if any channel is on to pass to the scheduler
+            bool anyChannelOn = false;
+            for (const auto& channel : settings.channels) {
+                if (channel.state) {
+                    anyChannelOn = true;
+                    break;
+                }
+            }
+
             SchedulerAction action = scheduler.checkSchedule(
                 timeManager.getHours(),
                 timeManager.getMinutes(),
-                settings.ledState
+                anyChannelOn
             );
 
             if (action!= NO_ACTION) {
+                bool newState = (action == TURN_ON);
                 Serial.print("[Main] Scheduler triggered action: ");
-                if (action == TURN_ON) {
-                    Serial.println("TURN_ON");
-                    settings.ledState = true;
-                } else { // TURN_OFF
-                    Serial.println("TURN_OFF");
-                    settings.ledState = false;
+                Serial.println(newState ? "TURN_ON" : "TURN_OFF");
+                for (auto& channel : settings.channels) {
+                    channel.state = newState;
                 }
-                
-                // Apply the new state and save it
-                ledController.update(settings.ledState, settings.brightness);
+                ledController.update(settings);
                 settingsManager.saveSettings();
             }
         }

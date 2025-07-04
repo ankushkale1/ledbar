@@ -1,55 +1,59 @@
 #include "LedController.h"
-#include <Arduino.h> // Required for pinMode, analogWrite, etc.
 
-/**
- * @brief Constructor
- */
-LedController::LedController(int pwmPin, bool inverted)
-    : _pin(pwmPin), _invertingLogic(inverted) {}
+LedController::LedController(bool inverted) : _invertingLogic(inverted) {}
 
-/**
- * @brief Initializes the pin
- */
 void LedController::begin() {
-    pinMode(_pin, OUTPUT);
-    analogWriteRange(PWM_RANGE);
-    
-    // Start with the LED in the OFF state for consistency.
-    // For active-low (inverted), OFF is HIGH (PWM_RANGE).
-    // For active-high (normal), OFF is LOW (0).
-    int offValue = _invertingLogic ? PWM_RANGE : 0;
-    analogWrite(_pin, offValue);
+    // Initialization of pins is now handled dynamically in update()
+    // to support changing pin configurations.
 }
 
-/**
- * @brief Updates the LED state and brightness based on your logic.
- */
-void LedController::update(bool state, int brightness) {
-    if (state) {
-        // --- The command is to turn the LED ON ---
+int LedController::pinNameToNumber(const String& pinName) {
+    if (pinName == "D0") return D0;
+    if (pinName == "D1") return D1;
+    if (pinName == "D2") return D2;
+    if (pinName == "D3") return D3;
+    if (pinName == "D4") return D4;
+    if (pinName == "D5") return D5;
+    if (pinName == "D6") return D6;
+    if (pinName == "D7") return D7;
+    if (pinName == "D8") return D8;
+    // Add other pin mappings as needed
+    return -1; // Invalid pin name
+}
 
-        // First, ensure the brightness value is safely within the 0-100 range.
-        int clampedBrightness = constrain(brightness, 0, 100);
-
-        int dutyCycle;
-        if (_invertingLogic) {
-            // For ACTIVE-LOW logic, the PWM signal is inverted.
-            // Brightness 100% = Duty Cycle 0 (LOW)
-            // Brightness 0%   = Duty Cycle PWM_RANGE (HIGH)
-            dutyCycle = map(clampedBrightness, 0, 100, PWM_RANGE, 0);
-        } else {
-            // For ACTIVE-HIGH logic, the PWM signal is direct.
-            // Brightness 100% = Duty Cycle PWM_RANGE (HIGH)
-            // Brightness 0%   = Duty Cycle 0 (LOW)
-            dutyCycle = map(clampedBrightness, 0, 100, 0, PWM_RANGE);
+void LedController::update(const DeviceSettings& settings) {
+    for (const auto& channel : settings.channels) {
+        int pin = pinNameToNumber(channel.pin);
+        if (pin == -1) {
+            Serial.printf("[LedCtrl] Invalid pin name: %s\n", channel.pin.c_str());
+            continue;
         }
-        analogWrite(_pin, dutyCycle);
 
-    } else {
-        // --- The command is to turn the LED OFF ---
-        
-        // Determine the correct PWM value for the OFF state based on the hardware logic.
-        int offValue = _invertingLogic ? PWM_RANGE : 0;
-        analogWrite(_pin, offValue);
+        // Initialize pin mode if not already done.
+        // A more robust implementation might track initialized pins to avoid calling this every time.
+        pinMode(pin, OUTPUT);
+
+        int brightness = channel.brightness;
+        bool state = channel.state;
+
+        // Constrain brightness to 0-100 range
+        if (brightness < 0) brightness = 0;
+        if (brightness > 100) brightness = 100;
+
+        if (state) { // If the channel should be ON
+            // Map brightness (0-100) to PWM range (0-255)
+            int pwmValue = map(brightness, 0, 100, 0, PWM_RANGE);
+
+            if (_invertingLogic) {
+                // For active-low, 100% brightness is PWM 0, and 0% is PWM 255.
+                analogWrite(pin, PWM_RANGE - pwmValue);
+            } else {
+                // For active-high, 100% brightness is PWM 255.
+                analogWrite(pin, pwmValue);
+            }
+        } else { // If the channel should be OFF
+            // Set pin to the OFF state
+            digitalWrite(pin, _invertingLogic ? HIGH : LOW);
+        }
     }
 }

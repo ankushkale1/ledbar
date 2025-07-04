@@ -1,100 +1,113 @@
 #include "SettingsManager.h"
+#include <ArduinoJson.h>
 
 SettingsManager::SettingsManager() {
-    // Initialize with safe default values
-    settings.ledState = false;
-    settings.brightness = 100;
-    settings.scheduleEnabled = false;
-    settings.startTime = "20:00";
-    settings.endTime = "06:00";
+    // Initialization is handled in begin() to ensure filesystem is ready.
 }
 
 void SettingsManager::begin() {
     if (mountFS()) {
         if (!loadSettings()) {
-            // If settings file doesn't exist or is corrupt, save defaults
+            Serial.println("[Settings] No settings file found or file corrupted, creating default settings.");
+            // Populate with some default channels if none exist to prevent empty settings
+            if (settings.channels.empty()) {
+                settings.channels.push_back({"D1", false, 100});
+                settings.channels.push_back({"D2", false, 100});
+            }
             saveSettings();
         }
     } else {
-        Serial.println(" Failed to mount LittleFS. Using default settings.");
+        Serial.println("[Settings] CRITICAL: Filesystem could not be mounted.");
     }
-}
-
-bool SettingsManager::mountFS() {
-    if (!LittleFS.begin()) {
-        Serial.println(" An error occurred while mounting LittleFS.");
-        return false;
-    }
-    return true;
 }
 
 bool SettingsManager::loadSettings() {
-    File configFile = LittleFS.open("/config.json", "r");
+    File configFile = LittleFS.open("/settings.json", "r");
     if (!configFile) {
-        Serial.println(" Failed to open config file for reading. It might not exist yet.");
+        Serial.println("[Settings] Failed to open config file for reading.");
         return false;
     }
 
-    size_t size = configFile.size();
-    if (size > 1024) {
-        Serial.println(" Config file size is too large.");
-        return false;
-    }
-
-    String content = configFile.readString();
+    // Use a DynamicJsonDocument to parse the file.
+    // Adjust the size if your settings object grows.
+    DynamicJsonDocument doc(1024);
+    DeserializationError error = deserializeJson(doc, configFile);
     configFile.close();
 
-    // Simple manual parsing to avoid large JSON library dependency
-    // This is a basic implementation; a robust parser would be better for complex files.
-    if (content.indexOf("\"ledState\":")!= -1) {
-        settings.ledState = (content.indexOf("\"ledState\":true")!= -1);
-    }
-    if (content.indexOf("\"brightness\":")!= -1) {
-        int start = content.indexOf("\"brightness\":") + 13;
-        int end = content.indexOf(",", start);
-        settings.brightness = content.substring(start, end).toInt();
-    }
-    if (content.indexOf("\"scheduleEnabled\":")!= -1) {
-        settings.scheduleEnabled = (content.indexOf("\"scheduleEnabled\":true")!= -1);
-    }
-    if (content.indexOf("\"startTime\":")!= -1) {
-        int start = content.indexOf("\"startTime\":\"") + 13;
-        int end = content.indexOf("\"", start);
-        settings.startTime = content.substring(start, end);
-    }
-    if (content.indexOf("\"endTime\":")!= -1) {
-        int start = content.indexOf("\"endTime\":\"") + 11;
-        int end = content.indexOf("\"", start);
-        settings.endTime = content.substring(start, end);
+    if (error) {
+        Serial.print(F("[Settings] deserializeJson() failed: "));
+        Serial.println(error.c_str());
+        return false;
     }
 
-    Serial.println(" Settings loaded successfully.");
+    // Load scheduler settings, providing defaults if keys are missing
+    settings.scheduleEnabled = doc["sch_en"] | false;
+    settings.startTime = doc["sch_s"] | "22:00";
+    settings.endTime = doc["sch_e"] | "06:00";
+
+    // Load channel settings
+    settings.channels.clear(); // Clear existing channels before loading new ones
+    JsonArray channelsArray = doc["channels"].as<JsonArray>();
+    for (JsonObject channelJson : channelsArray) {
+        ChannelSetting ch;
+        ch.pin = channelJson["pin"].as<String>();
+        ch.state = channelJson["state"];
+        ch.brightness = channelJson["brightness"];
+        settings.channels.push_back(ch);
+    }
+
+    Serial.println("[Settings] Settings loaded successfully.");
     return true;
 }
 
 bool SettingsManager::saveSettings() {
-    File configFile = LittleFS.open("/config.json", "w");
+    File configFile = LittleFS.open("/settings.json", "w");
     if (!configFile) {
-        Serial.println(" Failed to open config file for writing.");
+        Serial.println("[Settings] Failed to open config file for writing.");
         return false;
     }
 
-    // Manual JSON creation
-    String content = "{";
-    content += "\"ledState\":" + String(settings.ledState? "true" : "false") + ",";
-    content += "\"brightness\":" + String(settings.brightness) + ",";
-    content += "\"scheduleEnabled\":" + String(settings.scheduleEnabled? "true" : "false") + ",";
-    content += "\"startTime\":\"" + settings.startTime + "\",";
-    content += "\"endTime\":\"" + settings.endTime + "\"";
-    content += "}";
+    DynamicJsonDocument doc(1024);
 
-    configFile.print(content);
+    // Save scheduler settings
+    doc["sch_en"] = settings.scheduleEnabled;
+    doc["sch_s"] = settings.startTime;
+    doc["sch_e"] = settings.endTime;
+
+    // Save channel settings
+    JsonArray channels = doc.createNestedArray("channels");
+    for (const auto& ch_setting : settings.channels) {
+        JsonObject channel = channels.createNestedObject();
+        channel["pin"] = ch_setting.pin;
+        channel["state"] = ch_setting.state;
+        channel["brightness"] = ch_setting.brightness;
+    }
+
+    if (serializeJson(doc, configFile) == 0) {
+        Serial.println(F("[Settings] Failed to write to config file."));
+        configFile.close();
+        return false;
+    }
+
     configFile.close();
-
-    Serial.println(" Settings saved.");
+    Serial.println("[Settings] Settings saved successfully.");
     return true;
 }
 
 DeviceSettings& SettingsManager::getSettings() {
     return settings;
+}
+
+bool SettingsManager::mountFS() {
+    if (!LittleFS.begin()) {
+        Serial.println("[Settings] Failed to mount file system. Formatting...");
+        if (LittleFS.format()) {
+            Serial.println("[Settings] Filesystem formatted successfully.");
+            return LittleFS.begin();
+        } else {
+            Serial.println("[Settings] Filesystem format failed.");
+            return false;
+        }
+    }
+    return true;
 }

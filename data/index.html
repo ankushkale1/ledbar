@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ESP8266 LED Controller</title>
+    <title>Multi-Channel PWM Controller</title>
     <style>
       :root {
         --bg-color: #1a1a2e;
@@ -12,8 +12,7 @@
         --accent-color: #e94560;
         --text-color: #e0e0e0;
         --text-secondary-color: #a0a0a0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       }
       body {
         background-color: var(--bg-color);
@@ -22,7 +21,7 @@
         padding: 1rem;
         display: flex;
         justify-content: center;
-        align-items: center;
+        align-items: flex-start;
         min-height: 100vh;
       }
       .container {
@@ -36,7 +35,28 @@
         margin-bottom: 1rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
-      /*... More styles for h1, labels, etc.... */
+      h1, h2 {
+        color: var(--text-color);
+        border-bottom: 1px solid var(--primary-color);
+        padding-bottom: 0.5rem;
+        margin-top: 0;
+      }
+      .control-group {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+      label {
+        color: var(--text-secondary-color);
+      }
+      input[type="time"], input[type="text"], input[type="number"] {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        border: 1px solid var(--primary-color);
+        border-radius: 4px;
+        padding: 0.5rem;
+      }
 
       /* Custom Toggle Switch */
       .switch {
@@ -45,185 +65,69 @@
         width: 60px;
         height: 34px;
       }
-      .switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-      }
+      .switch input { opacity: 0; width: 0; height: 0; }
       .slider {
         position: absolute;
         cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        top: 0; left: 0; right: 0; bottom: 0;
         background-color: #ccc;
         transition: 0.4s;
       }
-      .slider.round {
-        border-radius: 34px;
-      }
+      .slider.round { border-radius: 34px; }
       .slider:before {
         position: absolute;
         content: "";
-        height: 26px;
-        width: 26px;
-        left: 4px;
-        bottom: 4px;
+        height: 26px; width: 26px;
+        left: 4px; bottom: 4px;
         background-color: white;
         transition: 0.4s;
       }
-      .slider.round:before {
-        border-radius: 50%;
-      }
-      input:checked + .slider {
-        background-color: var(--accent-color);
-      }
-      input:checked + .slider:before {
-        transform: translateX(26px);
-      }
+      .slider.round:before { border-radius: 50%; }
+      input:checked + .slider { background-color: var(--accent-color); }
+      input:checked + .slider:before { transform: translateX(26px); }
 
       /* Custom Brightness Slider */
       .brightness-slider {
         -webkit-appearance: none;
-        width: calc(100% - 60px);
+        width: calc(100% - 100px);
         height: 15px;
         background: #ddd;
         outline: none;
         opacity: 0.7;
-        transition: opacity.2s;
+        transition: opacity .2s;
         border-radius: 5px;
       }
-      .brightness-slider:hover {
-        opacity: 1;
-      }
+      .brightness-slider:hover { opacity: 1; }
       .brightness-slider::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
-        width: 25px;
-        height: 25px;
+        width: 25px; height: 25px;
         background: var(--accent-color);
         cursor: pointer;
         border-radius: 50%;
       }
       .brightness-slider::-moz-range-thumb {
-        width: 25px;
-        height: 25px;
+        width: 25px; height: 25px;
         background: var(--accent-color);
         cursor: pointer;
         border-radius: 50%;
       }
     </style>
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        // --- Element References ---
-        const ledToggle = document.getElementById("led-toggle");
-        const brightnessSlider = document.getElementById("brightness-slider");
-        const brightnessValue = document.getElementById("brightness-value");
-        const scheduleToggle = document.getElementById("schedule-toggle");
-        const startTimeInput = document.getElementById("start-time");
-        const endTimeInput = document.getElementById("end-time");
-
-        let isUpdating = false; // A flag to prevent event loops
-
-        // --- API Communication ---
-        async function sendSettings(settings) {
-          try {
-            const response = await fetch("/settings", {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: new URLSearchParams(settings),
-            });
-            if (!response.ok) {
-              console.error("Failed to send settings");
-            }
-          } catch (error) {
-            console.error("Error sending settings:", error);
-          }
-        }
-
-        async function updateStatus() {
-          if (isUpdating) return; // Don't fetch if we are in the middle of an update
-          try {
-            const response = await fetch("/status");
-            const data = await response.json();
-
-            isUpdating = true; // Set flag to prevent triggering sendSettings on update
-            ledToggle.checked = data.state;
-            brightnessSlider.value = data.brightness;
-            brightnessValue.textContent = `${data.brightness}%`;
-            scheduleToggle.checked = data.sch_en;
-            startTimeInput.value = data.sch_s;
-            endTimeInput.value = data.sch_e;
-            isUpdating = false; // Reset flag
-          } catch (error) {
-            console.error("Error fetching status:", error);
-            isUpdating = false; // Ensure flag is reset on error
-          }
-        }
-
-        // --- Event Listeners ---
-        ledToggle.addEventListener("change", () => {
-          if (isUpdating) return;
-          sendSettings({ state: ledToggle.checked });
-        });
-
-        brightnessSlider.addEventListener("input", () => {
-          brightnessValue.textContent = `${brightnessSlider.value}%`;
-        });
-
-        brightnessSlider.addEventListener("change", () => {
-          if (isUpdating) return;
-          sendSettings({ brightness: brightnessSlider.value });
-        });
-
-        scheduleToggle.addEventListener("change", () => {
-          if (isUpdating) return;
-          sendSettings({ scheduleEnabled: scheduleToggle.checked });
-        });
-
-        startTimeInput.addEventListener("change", () => {
-          if (isUpdating) return;
-          sendSettings({ startTime: startTimeInput.value });
-        });
-
-        endTimeInput.addEventListener("change", () => {
-          if (isUpdating) return;
-          sendSettings({ endTime: endTimeInput.value });
-        });
-
-        // --- Initial Load and Polling ---
-        updateStatus(); // Initial fetch to sync UI with device state
-        setInterval(updateStatus, 3000); // Poll for status every 3 seconds
-      });
-    </script>
   </head>
   <body>
     <div class="container">
-      <h1>ESP8266 LED Controller</h1>
+      <h1>Multi-Channel PWM Controller</h1>
 
       <div class="card">
-        <h2>Master Control</h2>
+        <h2>Configuration</h2>
         <div class="control-group">
-          <label for="led-toggle">Power</label>
-          <label class="switch">
-            <input type="checkbox" id="led-toggle" />
-            <span class="slider round"></span>
-          </label>
-        </div>
-        <div class="control-group">
-          <label for="brightness-slider">Brightness</label>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value="100"
-            class="brightness-slider"
-            id="brightness-slider"
-          />
-          <span id="brightness-value">100%</span>
+            <label for="pin-count">PWM Pin Count</label>
+            <input type="number" id="pin-count" min="1" max="10" value="1" />
         </div>
       </div>
+
+      <div id="pwm-controls-container">
+        </div>
 
       <div class="card">
         <h2>Scheduler</h2>
@@ -243,6 +147,149 @@
           <input type="time" id="end-time" />
         </div>
       </div>
+
     </div>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const pinCountInput = document.getElementById("pin-count");
+        const pwmControlsContainer = document.getElementById("pwm-controls-container");
+        const scheduleToggle = document.getElementById("schedule-toggle");
+        const startTimeInput = document.getElementById("start-time");
+        const endTimeInput = document.getElementById("end-time");
+
+        let isUpdating = false; // Flag to prevent event loops on UI update
+
+        // --- UI Generation ---
+        function generatePwmControls(count) {
+            pwmControlsContainer.innerHTML = ''; // Clear existing controls
+            for (let i = 0; i < count; i++) {
+                const controlBlock = `
+                <div class="card" data-index="${i}">
+                    <h2>Channel ${i + 1}</h2>
+                    <div class="control-group">
+                        <label for="pin-name-${i}">Pin Name</label>
+                        <input type="text" id="pin-name-${i}" placeholder="e.g., D1" />
+                    </div>
+                    <div class="control-group">
+                        <label for="led-toggle-${i}">Power</label>
+                        <label class="switch">
+                            <input type="checkbox" id="led-toggle-${i}" />
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div class="control-group">
+                        <label for="brightness-slider-${i}">Brightness</label>
+                        <input type="range" min="0" max="100" value="100" class="brightness-slider" id="brightness-slider-${i}" />
+                        <span id="brightness-value-${i}">100%</span>
+                    </div>
+                </div>`;
+                pwmControlsContainer.insertAdjacentHTML('beforeend', controlBlock);
+            }
+        }
+
+        // --- API Communication ---
+        async function sendSettings(settings) {
+            try {
+                const response = await fetch("/settings", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(settings),
+                });
+                if (!response.ok) console.error("Failed to send settings");
+            } catch (error) {
+                console.error("Error sending settings:", error);
+            }
+        }
+
+        async function updateStatus() {
+            if (isUpdating) return;
+            try {
+                const response = await fetch("/status");
+                const data = await response.json();
+                isUpdating = true; // Set flag
+
+                // Update channel controls
+                const currentPinCount = document.querySelectorAll('#pwm-controls-container .card').length;
+                if(data.channels && data.channels.length !== currentPinCount) {
+                    pinCountInput.value = data.channels.length;
+                    generatePwmControls(data.channels.length);
+                }
+
+                if (data.channels) {
+                    data.channels.forEach((channel, i) => {
+                        document.getElementById(`pin-name-${i}`).value = channel.pin;
+                        document.getElementById(`led-toggle-${i}`).checked = channel.state;
+                        const slider = document.getElementById(`brightness-slider-${i}`);
+                        slider.value = channel.brightness;
+                        document.getElementById(`brightness-value-${i}`).textContent = `${channel.brightness}%`;
+                    });
+                }
+
+                // Update scheduler controls
+                scheduleToggle.checked = data.sch_en;
+                startTimeInput.value = data.sch_s;
+                endTimeInput.value = data.sch_e;
+
+            } catch (error) {
+                console.error("Error fetching status:", error);
+            } finally {
+                isUpdating = false; // Reset flag
+            }
+        }
+
+        // --- Payload Management ---
+        function buildAndSendPayload() {
+            if (isUpdating) return;
+
+            const channels = [];
+            const count = pinCountInput.value;
+            for (let i = 0; i < count; i++) {
+                channels.push({
+                    pin: document.getElementById(`pin-name-${i}`).value,
+                    state: document.getElementById(`led-toggle-${i}`).checked,
+                    brightness: parseInt(document.getElementById(`brightness-slider-${i}`).value, 10),
+                });
+            }
+
+            const payload = {
+                channels: channels,
+                sch_en: scheduleToggle.checked,
+                sch_s: startTimeInput.value,
+                sch_e: endTimeInput.value,
+            };
+            sendSettings(payload);
+        }
+
+        // --- Event Listeners ---
+        pinCountInput.addEventListener("change", () => {
+            generatePwmControls(pinCountInput.value);
+            buildAndSendPayload();
+        });
+        
+        // Delegated event listener for dynamic controls
+        pwmControlsContainer.addEventListener("change", (e) => {
+             if (e.target.type === 'text' || e.target.type === 'checkbox' || e.target.type === 'range') {
+                buildAndSendPayload();
+            }
+        });
+
+        pwmControlsContainer.addEventListener("input", (e) => {
+            if (e.target.type === 'range') {
+                const index = e.target.closest('.card').dataset.index;
+                document.getElementById(`brightness-value-${index}`).textContent = `${e.target.value}%`;
+            }
+        });
+        
+        // Listeners for scheduler
+        scheduleToggle.addEventListener("change", buildAndSendPayload);
+        startTimeInput.addEventListener("change", buildAndSendPayload);
+        endTimeInput.addEventListener("change", buildAndSendPayload);
+
+        // --- Initial Load and Polling ---
+        updateStatus(); // Initial fetch to sync UI
+        setInterval(updateStatus, 3000); // Poll for status
+    });
+    </script>
   </body>
 </html>

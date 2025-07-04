@@ -1,0 +1,36 @@
+{
+  "status": {
+    "channels": [
+      {
+        "pin": "D1",
+        "state": true,
+        "brightness": 100
+      },
+      {
+        "pin": "D2",
+        "state": true,
+        "brightness": 100
+      }
+    ],
+    "sch_en": false,
+    "sch_s": "22:00",
+    "sch_e": "06:00"
+  },
+  "settings": {
+    "channels": [
+      {
+        "pin": "D1",
+        "state": true,
+        "brightness": 100
+      },
+      {
+        "pin": "D2",
+        "state": true,
+        "brightness": 100
+      }
+    ],
+    "sch_en": false,
+    "sch_s": "22:00",
+    "sch_e": "06:00"
+  }
+}
