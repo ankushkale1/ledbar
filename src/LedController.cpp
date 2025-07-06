@@ -5,6 +5,7 @@ LedController::LedController(bool inverted) : _invertingLogic(inverted) {}
 void LedController::begin() {
     // Initialization of pins is now handled dynamically in update()
     // to support changing pin configurations.
+    analogWriteRange(PWM_RANGE);
 }
 
 int LedController::pinNameToNumber(const String& pinName) {
@@ -22,38 +23,53 @@ int LedController::pinNameToNumber(const String& pinName) {
 }
 
 void LedController::update(const DeviceSettings& settings) {
+    Serial.println("[LedCtrl] --- Update Function Start ---");
+
     for (const auto& channel : settings.channels) {
+        Serial.printf("[LedCtrl] Processing channel for pin name: %s\n", channel.pin.c_str());
+
         int pin = pinNameToNumber(channel.pin);
         if (pin == -1) {
-            Serial.printf("[LedCtrl] Invalid pin name: %s\n", channel.pin.c_str());
-            continue;
+            Serial.printf("[LedCtrl] ERROR: Invalid pin name: %s\n", channel.pin.c_str());
+            continue; // Skip to the next channel
         }
+        Serial.printf("[LedCtrl] Pin number: %d\n", pin);
 
         // Initialize pin mode if not already done.
-        // A more robust implementation might track initialized pins to avoid calling this every time.
         pinMode(pin, OUTPUT);
 
         int brightness = channel.brightness;
         bool state = channel.state;
 
+        Serial.printf("[LedCtrl] Raw settings - State: %s, Brightness: %d\n", state ? "ON" : "OFF", brightness);
+
         // Constrain brightness to 0-100 range
-        if (brightness < 0) brightness = 0;
-        if (brightness > 100) brightness = 100;
+        int clampedBrightness = constrain(brightness, 0, 100);
+        Serial.printf("[LedCtrl] Constrained Brightness: %d\n", clampedBrightness);
+
 
         if (state) { // If the channel should be ON
-            // Map brightness (0-100) to PWM range (0-255)
-            int pwmValue = map(brightness, 0, 100, 0, PWM_RANGE);
-
+            Serial.println("[LedCtrl] Channel is ON");
+            int dutyCycle;
             if (_invertingLogic) {
                 // For active-low, 100% brightness is PWM 0, and 0% is PWM 255.
-                analogWrite(pin, PWM_RANGE - pwmValue);
+                dutyCycle = map(clampedBrightness, 0, 100, PWM_RANGE, 0);
+                Serial.printf("[LedCtrl] Inverting logic ON. Writing analog value: %d\n", dutyCycle);
+                analogWrite(pin, dutyCycle);
             } else {
                 // For active-high, 100% brightness is PWM 255.
-                analogWrite(pin, pwmValue);
+                dutyCycle = map(clampedBrightness, 0, 100, 0, PWM_RANGE);
+                Serial.printf("[LedCtrl] Inverting logic OFF. Writing analog value: %d\n", dutyCycle);
+                analogWrite(pin, dutyCycle);
             }
         } else { // If the channel should be OFF
+            Serial.println("[LedCtrl] Channel is OFF");
             // Set pin to the OFF state
-            digitalWrite(pin, _invertingLogic ? HIGH : LOW);
+            int offState = _invertingLogic ? PWM_RANGE : 0;
+            Serial.printf("[LedCtrl] Writing digital value: %s\n", offState == HIGH ? "HIGH" : "LOW");
+            analogWrite(pin, offState);
         }
+         Serial.println("[LedCtrl] --- Channel Processing End ---");
     }
+     Serial.println("[LedCtrl] --- Update Function End ---");
 }

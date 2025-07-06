@@ -50,7 +50,7 @@
       label {
         color: var(--text-secondary-color);
       }
-      input[type="time"], input[type="text"], input[type="number"] {
+      input[type="time"], input[type="text"], input[type="number"], select {
         background-color: var(--bg-color);
         color: var(--text-color);
         border: 1px solid var(--primary-color);
@@ -148,6 +148,45 @@
         </div>
       </div>
 
+      <div class="card">
+        <h2>Timezone</h2>
+        <div class="control-group">
+          <label for="timezone-select">Select Timezone</label>
+          <select id="timezone-select" style="width: 100%;">
+            <option value="-43200">(GMT-12:00) International Date Line West</option>
+            <option value="-39600">(GMT-11:00) Coordinated Universal Time-11</option>
+            <option value="-36000">(GMT-10:00) Hawaii</option>
+            <option value="-32400">(GMT-09:00) Alaska</option>
+            <option value="-28800">(GMT-08:00) Pacific Time (US & Canada)</option>
+            <option value="-25200">(GMT-07:00) Mountain Time (US & Canada)</option>
+            <option value="-21600">(GMT-06:00) Central Time (US & Canada)</option>
+            <option value="-18000">(GMT-05:00) Eastern Time (US & Canada)</option>
+            <option value="-14400">(GMT-04:00) Atlantic Time (Canada)</option>
+            <option value="-10800">(GMT-03:00) Buenos Aires</option>
+            <option value="-7200">(GMT-02:00) Coordinated Universal Time-02</option>
+            <option value="-3600">(GMT-01:00) Azores</option>
+            <option value="0">(GMT+00:00) London, Dublin, Lisbon</option>
+            <option value="3600">(GMT+01:00) Amsterdam, Berlin, Rome, Paris</option>
+            <option value="7200">(GMT+02:00) Athens, Helsinki, Jerusalem</option>
+            <option value="10800">(GMT+03:00) Moscow, St. Petersburg</option>
+            <option value="12600">(GMT+03:30) Tehran</option>
+            <option value="14400">(GMT+04:00) Abu Dhabi, Muscat</option>
+            <option value="16200">(GMT+04:30) Kabul</option>
+            <option value="18000">(GMT+05:00) Islamabad, Karachi</option>
+            <option value="19800" selected>(GMT+05:30) India Standard Time (IST)</option>
+            <option value="20700">(GMT+05:45) Kathmandu</option>
+            <option value="21600">(GMT+06:00) Dhaka</option>
+            <option value="25200">(GMT+07:00) Bangkok, Hanoi, Jakarta</option>
+            <option value="28800">(GMT+08:00) Beijing, Perth, Singapore</option>
+            <option value="32400">(GMT+09:00) Tokyo, Seoul, Osaka</option>
+            <option value="34200">(GMT+09:30) Adelaide, Darwin</option>
+            <option value="36000">(GMT+10:00) Sydney, Melbourne, Guam</option>
+            <option value="39600">(GMT+11:00) Solomon Is., New Caledonia</option>
+            <option value="43200">(GMT+12:00) Auckland, Wellington, Fiji</option>
+          </select>
+        </div>
+      </div>
+
     </div>
 
     <script>
@@ -157,6 +196,7 @@
         const scheduleToggle = document.getElementById("schedule-toggle");
         const startTimeInput = document.getElementById("start-time");
         const endTimeInput = document.getElementById("end-time");
+        const timezoneSelect = document.getElementById("timezone-select");
 
         let isUpdating = false; // Flag to prevent event loops on UI update
 
@@ -230,6 +270,7 @@
                 scheduleToggle.checked = data.sch_en;
                 startTimeInput.value = data.sch_s;
                 endTimeInput.value = data.sch_e;
+                timezoneSelect.value = data.gmt_offset;
 
             } catch (error) {
                 console.error("Error fetching status:", error);
@@ -257,6 +298,7 @@
                 sch_en: scheduleToggle.checked,
                 sch_s: startTimeInput.value,
                 sch_e: endTimeInput.value,
+                gmt_offset: parseInt(timezoneSelect.value, 10),
             };
             sendSettings(payload);
         }
@@ -285,6 +327,7 @@
         scheduleToggle.addEventListener("change", buildAndSendPayload);
         startTimeInput.addEventListener("change", buildAndSendPayload);
         endTimeInput.addEventListener("change", buildAndSendPayload);
+        timezoneSelect.addEventListener("change", buildAndSendPayload);
 
         // --- Initial Load and Polling ---
         updateStatus(); // Initial fetch to sync UI

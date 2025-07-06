@@ -2,8 +2,8 @@
 #include "LittleFS.h"
 #include <ArduinoJson.h>
 
-WebServerController::WebServerController(int port, SettingsManager& settingsMgr, LedController& ledCtrl, Scheduler& scheduler)
-    : _server(port), _settingsManager(settingsMgr), _ledController(ledCtrl), _scheduler(scheduler) {}
+WebServerController::WebServerController(int port, SettingsManager& settingsMgr, LedController& ledCtrl, Scheduler& scheduler, TimeManager& timeMgr)
+    : _server(port), _settingsManager(settingsMgr), _ledController(ledCtrl), _scheduler(scheduler), _timeManager(timeMgr) {}
 
 void WebServerController::begin() {
     _server.on("/", HTTP_GET, [this]() { this->handleRoot(); });
@@ -53,6 +53,7 @@ void WebServerController::handleSettings() {
     settings.scheduleEnabled = doc["sch_en"];
     settings.startTime = doc["sch_s"].as<String>();
     settings.endTime = doc["sch_e"].as<String>();
+    settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Use default if missing
 
     // Update channel settings from JSON
     JsonArray channelsArray = doc["channels"].as<JsonArray>();
@@ -67,6 +68,7 @@ void WebServerController::handleSettings() {
 
     // Apply the new settings
     _ledController.update(settings); // Note: LedController needs refactoring for multi-channel
+    _timeManager.setTimezone(settings.gmtOffsetSeconds);
     _scheduler.updateSchedule(settings.scheduleEnabled, settings.startTime, settings.endTime);
     _settingsManager.saveSettings();
 
@@ -80,6 +82,7 @@ void WebServerController::handleStatus() {
     doc["sch_en"] = settings.scheduleEnabled;
     doc["sch_s"] = settings.startTime;
     doc["sch_e"] = settings.endTime;
+    doc["gmt_offset"] = settings.gmtOffsetSeconds;
 
     JsonArray channels = doc.createNestedArray("channels");
     for (const auto& ch_setting : settings.channels) {

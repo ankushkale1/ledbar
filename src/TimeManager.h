@@ -9,6 +9,7 @@ public:
     TimeManager();
     void begin();
     void update();
+    void setTimezone(long gmtOffsetSeconds);
     String getFormattedTime();
     int getHours();
     int getMinutes();

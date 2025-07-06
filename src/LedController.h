@@ -27,7 +27,7 @@ public:
 
 private:
     bool _invertingLogic;
-    // The ESP8266 has a 10-bit PWM resolution, so the range is 0-1023.
+    // The ESP8266 has a 10-bit PWM resolution, so the range is 0-255.
     const int PWM_RANGE = 255;
     int pinNameToNumber(const String& pinName);
 };

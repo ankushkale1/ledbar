@@ -5,10 +5,11 @@
 #include "SettingsManager.h"
 #include "LedController.h"
 #include "Scheduler.h"
+#include "TimeManager.h"
 
 class WebServerController {
 public:
-    WebServerController(int port, SettingsManager& settingsMgr, LedController& ledCtrl, Scheduler& scheduler);
+    WebServerController(int port, SettingsManager& settingsMgr, LedController& ledCtrl, Scheduler& scheduler, TimeManager& timeMgr);
     void begin();
     void handleClient();
 
@@ -17,6 +18,7 @@ private:
     SettingsManager& _settingsManager;
     LedController& _ledController;
     Scheduler& _scheduler;
+    TimeManager& _timeManager;
 
     void handleRoot();
     void handleSettings();

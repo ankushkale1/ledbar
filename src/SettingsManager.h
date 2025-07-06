@@ -18,6 +18,7 @@ struct DeviceSettings {
   bool scheduleEnabled = false;
   String startTime = "22:00";
   String endTime = "06:00";
+  long gmtOffsetSeconds = 19800; // Default to IST (+5:30)
   // Remove old single-channel properties like ledState, brightness
 };
 

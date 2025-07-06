@@ -44,6 +44,7 @@ bool SettingsManager::loadSettings() {
     settings.scheduleEnabled = doc["sch_en"] | false;
     settings.startTime = doc["sch_s"] | "22:00";
     settings.endTime = doc["sch_e"] | "06:00";
+    settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Default to IST if not present
 
     // Load channel settings
     settings.channels.clear(); // Clear existing channels before loading new ones
@@ -73,6 +74,7 @@ bool SettingsManager::saveSettings() {
     doc["sch_en"] = settings.scheduleEnabled;
     doc["sch_s"] = settings.startTime;
     doc["sch_e"] = settings.endTime;
+    doc["gmt_offset"] = settings.gmtOffsetSeconds;
 
     // Save channel settings
     JsonArray channels = doc.createNestedArray("channels");

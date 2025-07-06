@@ -16,14 +16,16 @@ const char* WIFI_PASSWORD = "Ak@00789101112";
 const int STATUS_LED_PIN = D4;    // On-board LED used for status (GPIO2)
 const char* MDNS_HOSTNAME = "ledbar"; // mDNS hostname for the device
 
+const int INVERTING_LOGIC = true;
+
 // --- Global Object Instantiation ---
 SettingsManager settingsManager;
-LedController ledController(true); // true for inverted logic (active-low LEDs)
+LedController ledController(INVERTING_LOGIC); // true for inverted logic (active-low LEDs)
 WiFiConnector wifiConnector(WIFI_SSID, WIFI_PASSWORD, STATUS_LED_PIN);
 TimeManager timeManager;
 Scheduler scheduler;
 MDNSManager mdnsManager(MDNS_HOSTNAME);
-WebServerController webServerController(80, settingsManager, ledController, scheduler);
+WebServerController webServerController(80, settingsManager, ledController, scheduler, timeManager);
 
 // --- Timer for non-blocking scheduler check ---
 unsigned long lastSchedulerCheck = 0;
@@ -54,6 +56,7 @@ void setup() {
 
     // 5. Initialize Time Manager and perform initial sync
     timeManager.begin();
+    timeManager.setTimezone(settings.gmtOffsetSeconds);
     timeManager.update(); // Force initial update
     
     // 6. Initialize mDNS
@@ -90,7 +93,7 @@ void loop() {
             // Check if any channel is on to pass to the scheduler
             bool anyChannelOn = false;
             for (const auto& channel : settings.channels) {
-                if (channel.state) {
+                if (INVERTING_LOGIC ? !channel.state : channel.state) {
                     anyChannelOn = true;
                     break;
                 }
@@ -102,15 +105,29 @@ void loop() {
                 anyChannelOn
             );
 
-            if (action!= NO_ACTION) {
+            if (action != NO_ACTION) {
                 bool newState = (action == TURN_ON);
+                bool settingsChanged = false; // Flag to track if a change occurred
+
                 Serial.print("[Main] Scheduler triggered action: ");
                 Serial.println(newState ? "TURN_ON" : "TURN_OFF");
+
+                // Iterate through channels to check if an update is needed and apply it
                 for (auto& channel : settings.channels) {
-                    channel.state = newState;
+                    if (channel.state != newState) {
+                        channel.state = newState;
+                        settingsChanged = true; // A change was made
+                    }
                 }
-                ledController.update(settings);
-                settingsManager.saveSettings();
+
+                // Only update and save if the settings were actually changed
+                if (settingsChanged) {
+                    Serial.println("[Main] Settings have changed. Updating and saving...");
+                    ledController.update(settings);
+                    settingsManager.saveSettings();
+                } else {
+                    Serial.println("[Main] Scheduler action resulted in no change to settings.");
+                }
             }
         }
     }
