@@ -50,9 +50,6 @@ void WebServerController::handleSettings() {
     DeviceSettings& settings = _settingsManager.getSettings();
 
     // Update scheduler settings from JSON
-    settings.scheduleEnabled = doc["sch_en"];
-    settings.startTime = doc["sch_s"].as<String>();
-    settings.endTime = doc["sch_e"].as<String>();
     settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Use default if missing
 
     // Update channel settings from JSON
@@ -63,13 +60,17 @@ void WebServerController::handleSettings() {
         ch.pin = channelJson["pin"].as<String>();
         ch.state = channelJson["state"];
         ch.brightness = channelJson["brightness"];
+        ch.scheduleEnabled = channelJson["schedulerEnabled"];
+        ch.startTime = channelJson["scheduler_start"].as<String>();
+        ch.endTime = channelJson["scheduler_end"].as<String>();
+        ch.sheduledBrightness = channelJson["scheduler_brightness"];
         settings.channels.push_back(ch);
     }
 
     // Apply the new settings
     _ledController.update(settings); // Note: LedController needs refactoring for multi-channel
     _timeManager.setTimezone(settings.gmtOffsetSeconds);
-    _scheduler.updateSchedule(settings.scheduleEnabled, settings.startTime, settings.endTime);
+    _scheduler.updateSchedule(settings);
     _settingsManager.saveSettings();
 
     _server.send(200, "application/json", "{\"success\":true}");
@@ -79,9 +80,6 @@ void WebServerController::handleStatus() {
     DeviceSettings& settings = _settingsManager.getSettings();
     DynamicJsonDocument doc(1024); // Adjust size as needed
 
-    doc["sch_en"] = settings.scheduleEnabled;
-    doc["sch_s"] = settings.startTime;
-    doc["sch_e"] = settings.endTime;
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
 
     JsonArray channels = doc.createNestedArray("channels");
@@ -90,6 +88,10 @@ void WebServerController::handleStatus() {
         channel["pin"] = ch_setting.pin;
         channel["state"] = ch_setting.state;
         channel["brightness"] = ch_setting.brightness;
+        channel["schedulerEnabled"] = ch_setting.scheduleEnabled;
+        channel["scheduler_start"] = ch_setting.startTime;
+        channel["scheduler_end"] = ch_setting.endTime;
+        channel["scheduler_brightness"] = ch_setting.sheduledBrightness;
     }
 
     String json;

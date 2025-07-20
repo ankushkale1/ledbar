@@ -1,338 +1,259 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Multi-Channel PWM Controller</title>
-    <style>
-      :root {
-        --bg-color: #1a1a2e;
-        --card-bg-color: #16213e;
-        --primary-color: #0f3460;
-        --accent-color: #e94560;
-        --text-color: #e0e0e0;
-        --text-secondary-color: #a0a0a0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      }
-      body {
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        margin: 0;
-        padding: 1rem;
-        display: flex;
-        justify-content: center;
-        align-items: flex-start;
-        min-height: 100vh;
-      }
-      .container {
-        max-width: 500px;
-        width: 100%;
-      }
-      .card {
-        background-color: var(--card-bg-color);
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-      h1, h2 {
-        color: var(--text-color);
-        border-bottom: 1px solid var(--primary-color);
-        padding-bottom: 0.5rem;
-        margin-top: 0;
-      }
-      .control-group {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-      }
-      label {
-        color: var(--text-secondary-color);
-      }
-      input[type="time"], input[type="text"], input[type="number"], select {
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        border: 1px solid var(--primary-color);
-        border-radius: 4px;
-        padding: 0.5rem;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Channel PWM Controller</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px; width: 26px;
+      left: 4px; bottom: 4px;
+      background-color: #e5e7eb;
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider:before { transform: translateX(26px); }
+    .brightness-slider::-webkit-slider-thumb, .scheduler-brightness-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 25px; height: 25px;
+      background: #6b7280;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+    .brightness-slider::-moz-range-thumb, .scheduler-brightness-slider::-moz-range-thumb {
+      width: 25px; height: 25px;
+      background: #6b7280;
+      cursor: pointer;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body class="bg-gray-800 text-gray-200 min-h-screen flex justify-center p-4">
+  <div class="container max-w-md w-full">
+    <h1 class="text-2xl font-bold text-gray-200 border-b border-gray-600 pb-2">Multi-Channel PWM Controller</h1>
 
-      /* Custom Toggle Switch */
-      .switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 34px;
-      }
-      .switch input { opacity: 0; width: 0; height: 0; }
-      .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-color: #ccc;
-        transition: 0.4s;
-      }
-      .slider.round { border-radius: 34px; }
-      .slider:before {
-        position: absolute;
-        content: "";
-        height: 26px; width: 26px;
-        left: 4px; bottom: 4px;
-        background-color: white;
-        transition: 0.4s;
-      }
-      .slider.round:before { border-radius: 50%; }
-      input:checked + .slider { background-color: var(--accent-color); }
-      input:checked + .slider:before { transform: translateX(26px); }
-
-      /* Custom Brightness Slider */
-      .brightness-slider {
-        -webkit-appearance: none;
-        width: calc(100% - 100px);
-        height: 15px;
-        background: #ddd;
-        outline: none;
-        opacity: 0.7;
-        transition: opacity .2s;
-        border-radius: 5px;
-      }
-      .brightness-slider:hover { opacity: 1; }
-      .brightness-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 25px; height: 25px;
-        background: var(--accent-color);
-        cursor: pointer;
-        border-radius: 50%;
-      }
-      .brightness-slider::-moz-range-thumb {
-        width: 25px; height: 25px;
-        background: var(--accent-color);
-        cursor: pointer;
-        border-radius: 50%;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Multi-Channel PWM Controller</h1>
-
-      <div class="card">
-        <h2>Configuration</h2>
-        <div class="control-group">
-            <label for="pin-count">PWM Pin Count</label>
-            <input type="number" id="pin-count" min="1" max="10" value="1" />
-        </div>
+    <div class="bg-gray-700 rounded-lg p-6 mb-4 shadow-md">
+      <h2 class="text-xl font-semibold text-gray-200 border-b border-gray-600 pb-2">Configuration</h2>
+      <div class="flex justify-between items-center mb-4">
+        <label for="pin-count" class="text-gray-400">PWM Pin Count</label>
+        <input type="number" id="pin-count" min="1" max="10" value="1" class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2" />
       </div>
-
-      <div id="pwm-controls-container">
-        </div>
-
-      <div class="card">
-        <h2>Scheduler</h2>
-        <div class="control-group">
-          <label for="schedule-toggle">Enable Schedule</label>
-          <label class="switch">
-            <input type="checkbox" id="schedule-toggle" />
-            <span class="slider round"></span>
-          </label>
-        </div>
-        <div class="control-group">
-          <label for="start-time">On Time</label>
-          <input type="time" id="start-time" />
-        </div>
-        <div class="control-group">
-          <label for="end-time">Off Time</label>
-          <input type="time" id="end-time" />
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Timezone</h2>
-        <div class="control-group">
-          <label for="timezone-select">Select Timezone</label>
-          <select id="timezone-select" style="width: 100%;">
-            <option value="-43200">(GMT-12:00) International Date Line West</option>
-            <option value="-39600">(GMT-11:00) Coordinated Universal Time-11</option>
-            <option value="-36000">(GMT-10:00) Hawaii</option>
-            <option value="-32400">(GMT-09:00) Alaska</option>
-            <option value="-28800">(GMT-08:00) Pacific Time (US & Canada)</option>
-            <option value="-25200">(GMT-07:00) Mountain Time (US & Canada)</option>
-            <option value="-21600">(GMT-06:00) Central Time (US & Canada)</option>
-            <option value="-18000">(GMT-05:00) Eastern Time (US & Canada)</option>
-            <option value="-14400">(GMT-04:00) Atlantic Time (Canada)</option>
-            <option value="-10800">(GMT-03:00) Buenos Aires</option>
-            <option value="-7200">(GMT-02:00) Coordinated Universal Time-02</option>
-            <option value="-3600">(GMT-01:00) Azores</option>
-            <option value="0">(GMT+00:00) London, Dublin, Lisbon</option>
-            <option value="3600">(GMT+01:00) Amsterdam, Berlin, Rome, Paris</option>
-            <option value="7200">(GMT+02:00) Athens, Helsinki, Jerusalem</option>
-            <option value="10800">(GMT+03:00) Moscow, St. Petersburg</option>
-            <option value="12600">(GMT+03:30) Tehran</option>
-            <option value="14400">(GMT+04:00) Abu Dhabi, Muscat</option>
-            <option value="16200">(GMT+04:30) Kabul</option>
-            <option value="18000">(GMT+05:00) Islamabad, Karachi</option>
-            <option value="19800" selected>(GMT+05:30) India Standard Time (IST)</option>
-            <option value="20700">(GMT+05:45) Kathmandu</option>
-            <option value="21600">(GMT+06:00) Dhaka</option>
-            <option value="25200">(GMT+07:00) Bangkok, Hanoi, Jakarta</option>
-            <option value="28800">(GMT+08:00) Beijing, Perth, Singapore</option>
-            <option value="32400">(GMT+09:00) Tokyo, Seoul, Osaka</option>
-            <option value="34200">(GMT+09:30) Adelaide, Darwin</option>
-            <option value="36000">(GMT+10:00) Sydney, Melbourne, Guam</option>
-            <option value="39600">(GMT+11:00) Solomon Is., New Caledonia</option>
-            <option value="43200">(GMT+12:00) Auckland, Wellington, Fiji</option>
-          </select>
-        </div>
-      </div>
-
     </div>
 
-    <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const pinCountInput = document.getElementById("pin-count");
-        const pwmControlsContainer = document.getElementById("pwm-controls-container");
-        const scheduleToggle = document.getElementById("schedule-toggle");
-        const startTimeInput = document.getElementById("start-time");
-        const endTimeInput = document.getElementById("end-time");
-        const timezoneSelect = document.getElementById("timezone-select");
+    <div id="pwm-controls-container"></div>
 
-        let isUpdating = false; // Flag to prevent event loops on UI update
+    <div class="bg-gray-700 rounded-lg p-6 mb-4 shadow-md">
+      <h2 class="text-xl font-semibold text-gray-200 border-b border-gray-600 pb-2">Timezone</h2>
+      <div class="flex justify-between items-center mb-4">
+        <label for="timezone-select" class="text-gray-400">Select Timezone</label>
+        <select id="timezone-select" class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 w-full">
+          <option value="-43200">(GMT-12:00) International Date Line West</option>
+          <option value="-39600">(GMT-11:00) Coordinated Universal Time-11</option>
+          <option value="-36000">(GMT-10:00) Hawaii</option>
+          <option value="-32400">(GMT-09:00) Alaska</option>
+          <option value="-28800">(GMT-08:00) Pacific Time (US & Canada)</option>
+          <option value="-25200">(GMT-07:00) Mountain Time (US & Canada)</option>
+          <option value="-21600">(GMT-06:00) Central Time (US & Canada)</option>
+          <option value="-18000">(GMT-05:00) Eastern Time (US & Canada)</option>
+          <option value="-14400">(GMT-04:00) Atlantic Time (Canada)</option>
+          <option value="-10800">(GMT-03:00) Buenos Aires</option>
+          <option value="-7200">(GMT-02:00) Coordinated Universal Time-02</option>
+          <option value="-3600">(GMT-01:00) Azores</option>
+          <option value="0">(GMT+00:00) London, Dublin, Lisbon</option>
+          <option value="3600">(GMT+01:00) Amsterdam, Berlin, Rome, Paris</option>
+          <option value="7200">(GMT+02:00) Athens, Helsinki, Jerusalem</option>
+          <option value="10800">(GMT+03:00) Moscow, St. Petersburg</option>
+          <option value="12600">(GMT+03:30) Tehran</option>
+          <option value="14400">(GMT+04:00) Abu Dhabi, Muscat</option>
+          <option value="16200">(GMT+04:30) Kabul</option>
+          <option value="18000">(GMT+05:00) Islamabad, Karachi</option>
+          <option value="19800" selected>(GMT+05:30) India Standard Time (IST)</option>
+          <option value="20700">(GMT+05:45) Kathmandu</option>
+          <option value="21600">(GMT+06:00) Dhaka</option>
+          <option value="25200">(GMT+07:00) Bangkok, Hanoi, Jakarta</option>
+          <option value="28800">(GMT+08:00) Beijing, Perth, Singapore</option>
+          <option value="32400">(GMT+09:00) Tokyo, Seoul, Osaka</option>
+          <option value="34200">(GMT+09:30) Adelaide, Darwin</option>
+          <option value="36000">(GMT+10:00) Sydney, Melbourne, Guam</option>
+          <option value="39600">(GMT+11:00) Solomon Is., New Caledonia</option>
+          <option value="43200">(GMT+12:00) Auckland, Wellington, Fiji</option>
+        </select>
+      </div>
+    </div>
+  </div>
 
-        // --- UI Generation ---
-        function generatePwmControls(count) {
-            pwmControlsContainer.innerHTML = ''; // Clear existing controls
-            for (let i = 0; i < count; i++) {
-                const controlBlock = `
-                <div class="card" data-index="${i}">
-                    <h2>Channel ${i + 1}</h2>
-                    <div class="control-group">
-                        <label for="pin-name-${i}">Pin Name</label>
-                        <input type="text" id="pin-name-${i}" placeholder="e.g., D1" />
-                    </div>
-                    <div class="control-group">
-                        <label for="led-toggle-${i}">Power</label>
-                        <label class="switch">
-                            <input type="checkbox" id="led-toggle-${i}" />
-                            <span class="slider round"></span>
-                        </label>
-                    </div>
-                    <div class="control-group">
-                        <label for="brightness-slider-${i}">Brightness</label>
-                        <input type="range" min="0" max="100" value="100" class="brightness-slider" id="brightness-slider-${i}" />
-                        <span id="brightness-value-${i}">100%</span>
-                    </div>
-                </div>`;
-                pwmControlsContainer.insertAdjacentHTML('beforeend', controlBlock);
-            }
-        }
+  <!-- HTML Templates -->
+  <template id="channel-template">
+    <div class="card bg-gray-700 rounded-lg p-6 mb-4 shadow-md" data-index="{{index}}">
+      <h2 class="text-xl font-semibold text-gray-200 border-b border-gray-600 pb-2">Channel {{channelNum}}</h2>
+      <div class="flex justify-between items-center mb-4">
+        <label for="pin-name" class="text-gray-400">Pin Name</label>
+        <input type="text" id="pin-name" placeholder="e.g., D1" class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2" />
+      </div>
+      <div class="flex justify-between items-center mb-4">
+        <label for="brightness-slider" class="text-gray-400">Brightness</label>
+        <input type="range" min="0" max="100" value="100" class="brightness-slider w-[calc(100%-100px)] h-4 bg-gray-600 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity" id="brightness-slider" />
+        <span id="brightness-value" class="text-gray-200">100%</span>
+      </div>
+      <div class="flex justify-between items-center mb-4">
+        <label for="led-toggle" class="text-gray-400">Power</label>
+        <label class="switch relative inline-block w-16 h-9">
+          <input type="checkbox" id="led-toggle" />
+          <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-600 transition-all duration-400 rounded-full"></span>
+        </label>
+      </div>
+      <fieldset id="scheduler-fieldset" class="border border-gray-600 rounded p-4 mt-4">
+        <legend class="text-gray-400 text-base">Scheduler</legend>
+        <div class="flex justify-between items-center mb-4">
+          <label for="schedule-toggle" class="text-gray-400">Enable Schedule</label>
+          <label class="switch relative inline-block w-16 h-9">
+            <input type="checkbox" id="schedule-toggle" />
+            <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 bg-gray-600 transition-all duration-400 rounded-full"></span>
+          </label>
+        </div>
+        <div class="flex justify-between items-center mb-4">
+          <label for="start-time" class="text-gray-400">On Time</label>
+          <input type="time" id="start-time" disabled class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 disabled:bg-gray-700 disabled:opacity-60" />
+        </div>
+        <div class="flex justify-between items-center mb-4">
+          <label for="end-time" class="text-gray-400">Off Time</label>
+          <input type="time" id="end-time" disabled class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 disabled:bg-gray-700 disabled:opacity-60" />
+        </div>
+        <div class="flex justify-between items-center mb-4">
+          <label for="scheduler-brightness" class="text-gray-400">Scheduler Brightness</label>
+          <input type="range" min="0" max="100" value="100" class="scheduler-brightness-slider w-[calc(100%-100px)] h-4 bg-gray-600 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity" id="scheduler-brightness" disabled />
+          <span id="scheduler-brightness-value" class="text-gray-200">100%</span>
+        </div>
+      </fieldset>
+    </div>
+  </template>
 
-        // --- API Communication ---
-        async function sendSettings(settings) {
-            try {
-                const response = await fetch("/settings", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(settings),
-                });
-                if (!response.ok) console.error("Failed to send settings");
-            } catch (error) {
-                console.error("Error sending settings:", error);
-            }
-        }
+  <script>
+    const pinCountInput = document.getElementById('pin-count');
+    const pwmControlsContainer = document.getElementById('pwm-controls-container');
+    const timezoneSelect = document.getElementById('timezone-select');
+    let isUpdating = false;
 
-        async function updateStatus() {
-            if (isUpdating) return;
-            try {
-                const response = await fetch("/status");
-                const data = await response.json();
-                isUpdating = true; // Set flag
+    function updateSchedulerControls(index) {
+      const scheduleToggle = document.getElementById(`schedule-toggle-${index}`);
+      const fieldset = document.getElementById(`scheduler-fieldset-${index}`);
+      const inputs = fieldset.querySelectorAll(`input:not(#schedule-toggle-${index})`);
+      inputs.forEach(input => input.disabled = !scheduleToggle.checked);
+    }
 
-                // Update channel controls
-                const currentPinCount = document.querySelectorAll('#pwm-controls-container .card').length;
-                if(data.channels && data.channels.length !== currentPinCount) {
-                    pinCountInput.value = data.channels.length;
-                    generatePwmControls(data.channels.length);
-                }
-
-                if (data.channels) {
-                    data.channels.forEach((channel, i) => {
-                        document.getElementById(`pin-name-${i}`).value = channel.pin;
-                        document.getElementById(`led-toggle-${i}`).checked = channel.state;
-                        const slider = document.getElementById(`brightness-slider-${i}`);
-                        slider.value = channel.brightness;
-                        document.getElementById(`brightness-value-${i}`).textContent = `${channel.brightness}%`;
-                    });
-                }
-
-                // Update scheduler controls
-                scheduleToggle.checked = data.sch_en;
-                startTimeInput.value = data.sch_s;
-                endTimeInput.value = data.sch_e;
-                timezoneSelect.value = data.gmt_offset;
-
-            } catch (error) {
-                console.error("Error fetching status:", error);
-            } finally {
-                isUpdating = false; // Reset flag
-            }
-        }
-
-        // --- Payload Management ---
-        function buildAndSendPayload() {
-            if (isUpdating) return;
-
-            const channels = [];
-            const count = pinCountInput.value;
-            for (let i = 0; i < count; i++) {
-                channels.push({
-                    pin: document.getElementById(`pin-name-${i}`).value,
-                    state: document.getElementById(`led-toggle-${i}`).checked,
-                    brightness: parseInt(document.getElementById(`brightness-slider-${i}`).value, 10),
-                });
-            }
-
-            const payload = {
-                channels: channels,
-                sch_en: scheduleToggle.checked,
-                sch_s: startTimeInput.value,
-                sch_e: endTimeInput.value,
-                gmt_offset: parseInt(timezoneSelect.value, 10),
-            };
-            sendSettings(payload);
-        }
-
-        // --- Event Listeners ---
-        pinCountInput.addEventListener("change", () => {
-            generatePwmControls(pinCountInput.value);
-            buildAndSendPayload();
+    function renderChannels(count) {
+      pwmControlsContainer.innerHTML = '';
+      const template = document.getElementById('channel-template').content;
+      for (let i = 0; i < count; i++) {
+        const clone = document.importNode(template, true);
+        clone.querySelector('.card').dataset.index = i;
+        clone.querySelector('h2').textContent = `Channel ${i + 1}`;
+        clone.querySelector('#scheduler-fieldset').id = `scheduler-fieldset-${i}`;
+        ['pin-name', 'brightness-slider', 'brightness-value', 'led-toggle', 'schedule-toggle', 'start-time', 'end-time', 'scheduler-brightness', 'scheduler-brightness-value'].forEach(id => {
+          const element = clone.querySelector(`#${id}`);
+          element.id = `${id}-${i}`;
+          if (id === 'brightness-value' || id === 'scheduler-brightness-value') element.textContent = '100%';
         });
-        
-        // Delegated event listener for dynamic controls
-        pwmControlsContainer.addEventListener("change", (e) => {
-             if (e.target.type === 'text' || e.target.type === 'checkbox' || e.target.type === 'range') {
-                buildAndSendPayload();
-            }
-        });
+        pwmControlsContainer.appendChild(clone);
+        updateSchedulerControls(i);
+      }
+    }
 
-        pwmControlsContainer.addEventListener("input", (e) => {
-            if (e.target.type === 'range') {
-                const index = e.target.closest('.card').dataset.index;
-                document.getElementById(`brightness-value-${index}`).textContent = `${e.target.value}%`;
-            }
+    async function sendSettings(settings) {
+      try {
+        const response = await fetch('/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
         });
-        
-        // Listeners for scheduler
-        scheduleToggle.addEventListener("change", buildAndSendPayload);
-        startTimeInput.addEventListener("change", buildAndSendPayload);
-        endTimeInput.addEventListener("change", buildAndSendPayload);
-        timezoneSelect.addEventListener("change", buildAndSendPayload);
+        if (!response.ok) console.error('Failed to send settings');
+      } catch (error) {
+        console.error('Error sending settings:', error);
+      }
+    }
 
-        // --- Initial Load and Polling ---
-        updateStatus(); // Initial fetch to sync UI
-        setInterval(updateStatus, 3000); // Poll for status
+    async function updateStatus() {
+      if (isUpdating) return;
+      try {
+        isUpdating = true;
+        const response = await fetch('/status');
+        const data = await response.json();
+
+        if (data.channels?.length !== pwmControlsContainer.children.length) {
+          pinCountInput.value = data.channels?.length || 1;
+          renderChannels(pinCountInput.value);
+        }
+
+        if (data.channels) {
+          data.channels.forEach((channel, i) => {
+            console.log(`Channel ${i + 1} JSON: ${JSON.stringify(channel)}`);
+            document.getElementById(`pin-name-${i}`).value = channel.pin || '';
+            document.getElementById(`led-toggle-${i}`).checked = channel.state;
+            document.getElementById(`brightness-slider-${i}`).value = channel.brightness;
+            document.getElementById(`brightness-value-${i}`).textContent = `${channel.brightness}%`;
+            document.getElementById(`schedule-toggle-${i}`).checked = channel.schedulerEnabled;
+            document.getElementById(`start-time-${i}`).value = channel.scheduler_start || '';
+            document.getElementById(`end-time-${i}`).value = channel.scheduler_end || '';
+            document.getElementById(`scheduler-brightness-${i}`).value = channel.scheduler_brightness || 100;
+            document.getElementById(`scheduler-brightness-value-${i}`).textContent = `${channel.scheduler_brightness || 100}%`;
+            updateSchedulerControls(i);
+          });
+        }
+
+        timezoneSelect.value = data.gmt_offset;
+      } catch (error) {
+        console.error('Error fetching status:', error);
+      } finally {
+        isUpdating = false;
+      }
+    }
+
+    function buildPayload() {
+      if (isUpdating) return;
+      const count = parseInt(pinCountInput.value);
+      const payload = {
+        channels: Array.from({ length: count }, (_, i) => ({
+          pin: document.getElementById(`pin-name-${i}`).value,
+          state: document.getElementById(`led-toggle-${i}`).checked,
+          schedulerEnabled: document.getElementById(`schedule-toggle-${i}`).checked,
+          scheduler_start: document.getElementById(`start-time-${i}`).value,
+          scheduler_end: document.getElementById(`end-time-${i}`).value,
+          brightness: parseInt(document.getElementById(`brightness-slider-${i}`).value),
+          scheduler_brightness: parseInt(document.getElementById(`scheduler-brightness-${i}`).value)
+        })),
+        gmt_offset: parseInt(timezoneSelect.value)
+      };
+      sendSettings(payload);
+    }
+
+    pinCountInput.addEventListener('change', () => {
+      renderChannels(pinCountInput.value);
+      buildPayload();
     });
-    </script>
-  </body>
+
+    pwmControlsContainer.addEventListener('input', (e) => {
+      const index = e.target.closest('.card')?.dataset.index;
+      if (index) {
+        if (e.target.id.startsWith('brightness-slider')) {
+          document.getElementById(`brightness-value-${index}`).textContent = `${e.target.value}%`;
+        } else if (e.target.id.startsWith('scheduler-brightness')) {
+          document.getElementById(`scheduler-brightness-value-${index}`).textContent = `${e.target.value}%`;
+        } else if (e.target.id.startsWith('schedule-toggle')) {
+          updateSchedulerControls(index);
+        }
+        buildPayload();
+      }
+    });
+
+    timezoneSelect.addEventListener('change', buildPayload);
+
+    renderChannels(pinCountInput.value);
+    updateStatus();
+    setInterval(updateStatus, 3000);
+  </script>
+</body>
 </html>

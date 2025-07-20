@@ -7,8 +7,7 @@ class MotionSensor {
 public:
     MotionSensor(int pin);
     void begin();
-    bool MotionSensor::motionDetected();
-
+    bool motionDetected();
 private:
     int _pin;
 };

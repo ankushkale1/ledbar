@@ -38,8 +38,8 @@ void LedController::update(const DeviceSettings& settings) {
         // Initialize pin mode if not already done.
         pinMode(pin, OUTPUT);
 
-        int brightness = channel.brightness;
-        bool state = channel.state;
+        int brightness = channel.schedulerActive ? channel.sheduledBrightness : channel.brightness;
+        bool state = channel.schedulerActive ? true : channel.state;
 
         Serial.printf("[LedCtrl] Raw settings - State: %s, Brightness: %d\n", state ? "ON" : "OFF", brightness);
 

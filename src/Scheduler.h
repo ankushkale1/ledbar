@@ -2,26 +2,25 @@
 #define SCHEDULER_H
 
 #include <Arduino.h>
+#include "SettingsManager.h" // For DeviceSettings
 
-enum SchedulerAction {
-    NO_ACTION,
-    TURN_ON,
-    TURN_OFF
+class SchedulerAction {
+    public:
+    SchedulerAction() : channel(-1), stateOnOFF(false), brightness(0) {}
+    String channel;
+    bool stateOnOFF;
+    int brightness;
 };
 
 class Scheduler {
 public:
     Scheduler();
-    void updateSchedule(bool enabled, const String& startTime, const String& endTime);
-    SchedulerAction checkSchedule(int currentHour, int currentMinute, bool currentLedState);
+    Scheduler(DeviceSettings& settings);
+    void updateSchedule(const DeviceSettings& settings);
+    std::vector<SchedulerAction> checkSchedule(int currentHour, int currentMinute);
 
 private:
-    bool _enabled;
-    int _startHour;
-    int _startMinute;
-    int _endHour;
-    int _endMinute;
-
+    DeviceSettings settings;
     int timeToMinutes(int hour, int minute);
 };
 

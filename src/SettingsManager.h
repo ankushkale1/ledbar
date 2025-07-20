@@ -10,14 +10,16 @@ struct ChannelSetting {
   String pin;
   bool state;
   int brightness;
+  bool scheduleEnabled = false;
+  String startTime = "22:00";
+  String endTime = "06:00";
+  int sheduledBrightness = 0; // Default brightness for scheduled mode
+  bool schedulerActive = false; // Indicates if the scheduler is active for this channel
 };
 
 // The main settings struct for the device
 struct DeviceSettings {
   std::vector<ChannelSetting> channels;
-  bool scheduleEnabled = false;
-  String startTime = "22:00";
-  String endTime = "06:00";
   long gmtOffsetSeconds = 19800; // Default to IST (+5:30)
   // Remove old single-channel properties like ledState, brightness
 };

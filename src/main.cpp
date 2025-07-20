@@ -15,7 +15,7 @@ const char* WIFI_PASSWORD = "Ak@00789101112";
 
 // Pin Assignments
 const int STATUS_LED_PIN = D4;    // On-board LED used for status (GPIO2)
-const char* MDNS_HOSTNAME = "ledbar"; // mDNS hostname for the device
+const char* MDNS_HOSTNAME = "ledbar2"; // mDNS hostname for the device
 
 const int INVERTING_LOGIC = true;
 const int MOTION_SENSOR_PIN = D0; // Example pin, change as needed.
@@ -50,7 +50,7 @@ void setup() {
     ledController.update(settings);
 
     // 3. Initialize Scheduler with loaded settings
-    scheduler.updateSchedule(settings.scheduleEnabled, settings.startTime, settings.endTime);
+    scheduler.updateSchedule(settings);
     
     // 3.5. Initialize Motion Sensor
     motionSensor.begin();
@@ -130,23 +130,32 @@ void loop() {
 
             if (wifiConnector.isConnected()) {
                 DeviceSettings& settings = settingsManager.getSettings();
+                std::vector<SchedulerAction> actions = scheduler.checkSchedule(
+                    timeManager.getHours(),
+                    timeManager.getMinutes());
 
-                // Check if any channel is on to pass to the scheduler
-                bool anyChannelOn = false;
-                for (const auto& channel : settings.channels) {
-                    if (INVERTING_LOGIC ? !channel.state : channel.state) {
-                        anyChannelOn = true;
-                        break;
+                bool settingsChanged = false;
+
+                for (const auto& action : actions) {
+                    Serial.printf("[Main] Scheduler Action: Channel: %s, State: %s, Brightness: %d\n",
+                                  action.channel.c_str(),
+                                  action.stateOnOFF ? "ON" : "OFF",
+                                  action.brightness);
+                    // Update the LED controller based on the action
+
+                    for (auto& channel : settings.channels) {
+                        if (channel.pin == action.channel) {
+                            if(channel.scheduleEnabled && action.stateOnOFF)
+                                channel.schedulerActive = true;
+                            else 
+                                channel.schedulerActive = false;
+                            settingsChanged = true;
+                        }
+                    }
+                    if (settingsChanged) {
+                        ledController.update(settings);
                     }
                 }
-
-                SchedulerAction action = scheduler.checkSchedule(
-                    timeManager.getHours(),
-                    timeManager.getMinutes(),
-                    anyChannelOn
-                );
-
-                // ... (Scheduler logic remains the same) ...
             }
         }
     }

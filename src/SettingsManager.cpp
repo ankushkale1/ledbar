@@ -41,9 +41,6 @@ bool SettingsManager::loadSettings() {
     }
 
     // Load scheduler settings, providing defaults if keys are missing
-    settings.scheduleEnabled = doc["sch_en"] | false;
-    settings.startTime = doc["sch_s"] | "22:00";
-    settings.endTime = doc["sch_e"] | "06:00";
     settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Default to IST if not present
 
     // Load channel settings
@@ -54,6 +51,10 @@ bool SettingsManager::loadSettings() {
         ch.pin = channelJson["pin"].as<String>();
         ch.state = channelJson["state"];
         ch.brightness = channelJson["brightness"];
+        ch.scheduleEnabled = doc["sch_en"] | false;
+        ch.startTime = doc["sch_s"] | "22:00";
+        ch.endTime = doc["sch_e"] | "06:00";
+        ch.sheduledBrightness = doc["sch_brightness"] | 100;
         settings.channels.push_back(ch);
     }
 
@@ -71,9 +72,6 @@ bool SettingsManager::saveSettings() {
     DynamicJsonDocument doc(1024);
 
     // Save scheduler settings
-    doc["sch_en"] = settings.scheduleEnabled;
-    doc["sch_s"] = settings.startTime;
-    doc["sch_e"] = settings.endTime;
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
 
     // Save channel settings
@@ -83,6 +81,10 @@ bool SettingsManager::saveSettings() {
         channel["pin"] = ch_setting.pin;
         channel["state"] = ch_setting.state;
         channel["brightness"] = ch_setting.brightness;
+        channel["sch_en"] = ch_setting.scheduleEnabled;
+        channel["sch_s"] = ch_setting.startTime;
+        channel["sch_e"] = ch_setting.endTime;
+        channel["sch_brightness"] = ch_setting.sheduledBrightness;
     }
 
     if (serializeJson(doc, configFile) == 0) {
