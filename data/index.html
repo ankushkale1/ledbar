@@ -190,7 +190,7 @@
 
         if (data.channels) {
           data.channels.forEach((channel, i) => {
-            console.log(`Channel ${i + 1} JSON: ${JSON.stringify(channel)}`);
+            //console.log(`Channel ${i + 1} JSON: ${JSON.stringify(channel)}`);
             document.getElementById(`pin-name-${i}`).value = channel.pin || '';
             document.getElementById(`led-toggle-${i}`).checked = channel.state;
             document.getElementById(`brightness-slider-${i}`).value = channel.brightness;

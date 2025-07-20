@@ -20,13 +20,15 @@ void WebServerController::handleClient() {
 }
 
 void WebServerController::handleRoot() {
-    File file = LittleFS.open("/index.html", "r");
-    if (!file) {
-        handleNotFound();
-        return;
-    }
-    _server.streamFile(file, "text/html");
+    serveFile("/index.html");
+}
+
+void WebServerController::serveFile(const String& filePath) {
+  File file = LittleFS.open(filePath, "r");
+  if (file) {
+    _server.streamFile(file, getContentType(filePath));
     file.close();
+  } else handleNotFound();
 }
 
 void WebServerController::handleSettings() {
@@ -101,4 +103,12 @@ void WebServerController::handleStatus() {
 
 void WebServerController::handleNotFound() {
     _server.send(404, "text/plain", "404: Not Found");
+}
+
+String WebServerController::getContentType(const String& filePath) {
+  if (filePath.endsWith(".html")) return "text/html";
+  else if (filePath.endsWith(".css")) return "text/css";
+  else if (filePath.endsWith(".js")) return "application/javascript";
+  else if (filePath.endsWith(".json")) return "application/json";
+  return "text/plain";
 }
