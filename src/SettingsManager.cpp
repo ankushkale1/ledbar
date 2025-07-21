@@ -11,8 +11,8 @@ void SettingsManager::begin() {
             Serial.println("[Settings] No settings file found or file corrupted, creating default settings.");
             // Populate with some default channels if none exist to prevent empty settings
             if (settings.channels.empty()) {
-                settings.channels.push_back({"D1", false, 100});
-                settings.channels.push_back({"D2", false, 100});
+                settings.channels.push_back({"D1", false, 80});
+                settings.channels.push_back({"D2", false, 80});
             }
             saveSettings();
         }
@@ -51,10 +51,10 @@ bool SettingsManager::loadSettings() {
         ch.pin = channelJson["pin"].as<String>();
         ch.state = channelJson["state"];
         ch.brightness = channelJson["brightness"];
-        ch.scheduleEnabled = doc["sch_en"] | false;
-        ch.startTime = doc["sch_s"] | "22:00";
-        ch.endTime = doc["sch_e"] | "06:00";
-        ch.sheduledBrightness = doc["sch_brightness"] | 100;
+        ch.scheduleEnabled = doc["sch_en"] | true;
+        ch.startTime = doc["sch_s"] | "19:00";
+        ch.endTime = doc["sch_e"] | "23:30";
+        ch.sheduledBrightness = doc["sch_brightness"] | 80;
         settings.channels.push_back(ch);
     }
 
