@@ -15,7 +15,7 @@ const char* WIFI_PASSWORD = "Ak@00789101112";
 
 // Pin Assignments
 const int STATUS_LED_PIN = D4;    // On-board LED used for status (GPIO2)
-const char* MDNS_HOSTNAME = "ledbar"; // mDNS hostname for the device
+const char* MDNS_HOSTNAME = "ledbar2"; // mDNS hostname for the device
 
 const int INVERTING_LOGIC = true;
 const int MOTION_SENSOR_PIN = D0; // Example pin, change as needed.

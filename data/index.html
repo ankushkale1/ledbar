@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Multi-Channel PWM Controller</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
   <style>
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
@@ -114,172 +116,292 @@
 
   <!-- HTML Templates -->
   <template id="channel-template">
-    <div class="card bg-gray-700 rounded-lg p-6 mb-4 shadow-md" data-index="{{index}}">
-      <h2 class="text-xl font-semibold text-gray-200 border-b border-gray-600 pb-2">Channel {{channelNum}}</h2>
+  <div class="card bg-gray-700 rounded-lg p-6 mb-4 shadow-md" data-index="{{index}}">
+    <h2 class="text-xl font-semibold text-gray-200 border-b border-gray-600 pb-2">Channel {{channelNum}}</h2>
+    <div class="main-controls">
       <div class="flex justify-between items-center mb-4">
-        <label for="pin-name" class="text-gray-400">Pin Name</label>
-        <input type="text" id="pin-name" placeholder="e.g., D1" class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2" />
+        <label class="text-gray-400">Pin Name</label>
+        <input type="text" placeholder="e.g., D1" class="pin-name bg-gray-800 text-gray-200 border border-gray-600 rounded p-2" />
       </div>
       <div class="flex justify-between items-center mb-4">
-        <label for="brightness-slider" class="text-gray-400">Brightness</label>
-        <input type="range" min="0" max="100" value="100" class="brightness-slider w-[calc(100%-100px)] h-4 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity" id="brightness-slider" />
-        <span id="brightness-value" class="text-gray-200">100%</span>
+        <label class="text-gray-400">Brightness</label>
+        <input type="range" min="0" max="100" value="100" class="brightness-slider w-[calc(100%-100px)] h-4 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity" />
+        <span class="brightness-value text-gray-200">100%</span>
       </div>
       <div class="flex justify-between items-center mb-4">
-        <label for="led-toggle" class="text-gray-400">Power</label>
+        <label class="text-gray-400">Power</label>
         <label class="switch relative inline-block w-16 h-9">
-          <input type="checkbox" id="led-toggle" />
+          <input type="checkbox" class="led-toggle" />
           <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 transition-all duration-400 rounded-full"></span>
         </label>
       </div>
-      <fieldset id="scheduler-fieldset" class="border border-gray-600 rounded p-4 mt-4">
-        <legend class="text-gray-400 text-base">Scheduler</legend>
-        <div class="flex justify-between items-center mb-4">
-          <label for="schedule-toggle" class="text-gray-400">Enable Schedule</label>
-          <label class="switch relative inline-block w-16 h-9">
-            <input type="checkbox" id="schedule-toggle" />
-            <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 transition-all duration-400 rounded-full"></span>
-          </label>
-        </div>
-        <div class="flex justify-between items-center mb-4">
-          <label for="start-time" class="text-gray-400">On Time</label>
-          <input type="time" id="start-time" disabled class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 disabled:bg-gray-700 disabled:opacity-60" />
-        </div>
-        <div class="flex justify-between items-center mb-4">
-          <label for="end-time" class="text-gray-400">Off Time</label>
-          <input type="time" id="end-time" disabled class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 disabled:bg-gray-700 disabled:opacity-60" />
-        </div>
-        <div class="flex justify-between items-center mb-4">
-          <label for="scheduler-brightness" class="text-gray-400">Scheduler Brightness</label>
-          <input type="range" min="0" max="100" value="100" class="scheduler-brightness-slider w-[calc(100%-100px)] h-4 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity" id="scheduler-brightness" disabled />
-          <span id="scheduler-brightness-value" class="text-gray-200">100%</span>
-        </div>
-      </fieldset>
     </div>
-  </template>
+    <fieldset class="scheduler-fieldset border border-gray-600 rounded p-4 mt-4">
+      <legend class="text-gray-400 text-base">Scheduler</legend>
+      <div class="flex justify-between items-center mb-4">
+        <label class="text-gray-400">Enable Schedule</label>
+        <label class="switch relative inline-block w-16 h-9">
+          <input type="checkbox" class="schedule-toggle" />
+          <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 transition-all duration-400 rounded-full"></span>
+        </label>
+      </div>
+      <div class="flex justify-between items-center mb-4">
+        <label class="text-gray-400">On Time</label>
+        <input type="time" disabled class="start-time bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 disabled:bg-gray-700 disabled:opacity-60" />
+      </div>
+      <div class="flex justify-between items-center mb-4">
+        <label class="text-gray-400">Off Time</label>
+        <input type="time" disabled class="end-time bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 disabled:bg-gray-700 disabled:opacity-60" />
+      </div>
+      <div class="flex justify-between items-center mb-4">
+        <label class="text-gray-400">Scheduler Brightness</label>
+        <input type="range" min="0" max="100" value="100" class="scheduler-brightness-slider w-[calc(100%-100px)] h-4 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity" disabled />
+        <span class="scheduler-brightness-value text-gray-200">100%</span>
+      </div>
+    </fieldset>
+  </div>
+</template>
 
   <script>
-    const pinCountInput = document.getElementById('pin-count');
-    const pwmControlsContainer = document.getElementById('pwm-controls-container');
-    const timezoneSelect = document.getElementById('timezone-select');
-    let isUpdating = false;
+      document.addEventListener('DOMContentLoaded', () => {
+      // Element references
+      const pinCountInput = document.getElementById('pin-count');
+      const pwmControlsContainer = document.getElementById('pwm-controls-container');
+      const timezoneSelect = document.getElementById('timezone-select');
+      const channelTemplate = document.getElementById('channel-template');
 
-    function updateSchedulerControls(index) {
-      const scheduleToggle = document.getElementById(`schedule-toggle-${index}`);
-      const fieldset = document.getElementById(`scheduler-fieldset-${index}`);
-      const inputs = fieldset.querySelectorAll(`input:not(#schedule-toggle-${index})`);
-      inputs.forEach(input => input.disabled = !scheduleToggle.checked);
-    }
+      let isUpdating = false; // A flag to prevent re-entrant function calls
 
-    function renderChannels(count) {
-      pwmControlsContainer.innerHTML = '';
-      const template = document.getElementById('channel-template').content;
-      for (let i = 0; i < count; i++) {
-        const clone = document.importNode(template, true);
-        clone.querySelector('.card').dataset.index = i;
-        clone.querySelector('h2').textContent = `Channel ${i + 1}`;
-        clone.querySelector('#scheduler-fieldset').id = `scheduler-fieldset-${i}`;
-        ['pin-name', 'brightness-slider', 'brightness-value', 'led-toggle', 'schedule-toggle', 'start-time', 'end-time', 'scheduler-brightness', 'scheduler-brightness-value'].forEach(id => {
-          const element = clone.querySelector(`#${id}`);
-          element.id = `${id}-${i}`;
-          if (id === 'brightness-value' || id === 'scheduler-brightness-value') element.textContent = '100%';
-        });
-        pwmControlsContainer.appendChild(clone);
-        updateSchedulerControls(i);
-      }
-    }
-
-    async function sendSettings(settings) {
-      try {
-        const response = await fetch('/settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(settings)
-        });
-        if (!response.ok) console.error('Failed to send settings');
-      } catch (error) {
-        console.error('Error sending settings:', error);
-      }
-    }
-
-    async function updateStatus() {
-      if (isUpdating) return;
-      try {
-        isUpdating = true;
-        const response = await fetch('/status');
-        const data = await response.json();
-
-        if (data.channels?.length !== pwmControlsContainer.children.length) {
-          pinCountInput.value = data.channels?.length || 1;
-          renderChannels(pinCountInput.value);
-        }
-
-        if (data.channels) {
-          data.channels.forEach((channel, i) => {
-            //console.log(`Channel ${i + 1} JSON: ${JSON.stringify(channel)}`);
-            document.getElementById(`pin-name-${i}`).value = channel.pin || '';
-            document.getElementById(`led-toggle-${i}`).checked = channel.state;
-            document.getElementById(`brightness-slider-${i}`).value = channel.brightness;
-            document.getElementById(`brightness-value-${i}`).textContent = `${channel.brightness}%`;
-            document.getElementById(`schedule-toggle-${i}`).checked = channel.schedulerEnabled;
-            document.getElementById(`start-time-${i}`).value = channel.scheduler_start || '';
-            document.getElementById(`end-time-${i}`).value = channel.scheduler_end || '';
-            document.getElementById(`scheduler-brightness-${i}`).value = channel.scheduler_brightness || 100;
-            document.getElementById(`scheduler-brightness-value-${i}`).textContent = `${channel.scheduler_brightness || 100}%`;
-            updateSchedulerControls(i);
+      /**
+       * Toggles the disabled state of scheduler inputs based on the schedule checkbox.
+       * @param {HTMLElement} card The card element to update.
+       */
+      function updateSchedulerControls(card) {
+          const scheduleToggle = card.querySelector('.schedule-toggle');
+          const fieldset = card.querySelector('.scheduler-fieldset');
+          // Disable all inputs within the fieldset except for the toggle itself
+          fieldset.querySelectorAll('input, select').forEach(input => {
+              if (!input.classList.contains('schedule-toggle')) {
+                  input.disabled = !scheduleToggle.checked;
+              }
           });
-        }
-
-        timezoneSelect.value = data.gmt_offset;
-      } catch (error) {
-        console.error('Error fetching status:', error);
-      } finally {
-        isUpdating = false;
       }
-    }
 
-    function buildPayload() {
-      if (isUpdating) return;
-      const count = parseInt(pinCountInput.value);
-      const payload = {
-        channels: Array.from({ length: count }, (_, i) => ({
-          pin: document.getElementById(`pin-name-${i}`).value,
-          state: document.getElementById(`led-toggle-${i}`).checked,
-          schedulerEnabled: document.getElementById(`schedule-toggle-${i}`).checked,
-          scheduler_start: document.getElementById(`start-time-${i}`).value,
-          scheduler_end: document.getElementById(`end-time-${i}`).value,
-          brightness: parseInt(document.getElementById(`brightness-slider-${i}`).value),
-          scheduler_brightness: parseInt(document.getElementById(`scheduler-brightness-${i}`).value)
-        })),
-        gmt_offset: parseInt(timezoneSelect.value)
-      };
-      sendSettings(payload);
-    }
+      /**
+       * Renders the specified number of channel control cards.
+       * @param {number} count The number of channels to render.
+       */
+      function renderChannels(count) {
+          pwmControlsContainer.innerHTML = '';
+          if (!channelTemplate) return;
 
-    pinCountInput.addEventListener('change', () => {
-      renderChannels(pinCountInput.value);
-      buildPayload();
-    });
-
-    pwmControlsContainer.addEventListener('input', (e) => {
-      const index = e.target.closest('.card')?.dataset.index;
-      if (index) {
-        if (e.target.id.startsWith('brightness-slider')) {
-          document.getElementById(`brightness-value-${index}`).textContent = `${e.target.value}%`;
-        } else if (e.target.id.startsWith('scheduler-brightness')) {
-          document.getElementById(`scheduler-brightness-value-${index}`).textContent = `${e.target.value}%`;
-        } else if (e.target.id.startsWith('schedule-toggle')) {
-          updateSchedulerControls(index);
-        }
-        buildPayload();
+          for (let i = 0; i < count; i++) {
+              const clone = channelTemplate.content.cloneNode(true);
+              const card = clone.querySelector('.card');
+              card.dataset.index = i;
+              card.querySelector('h2').textContent = `Channel ${i + 1}`;
+              pwmControlsContainer.appendChild(clone);
+              updateSchedulerControls(card);
+          }
       }
-    });
 
-    timezoneSelect.addEventListener('change', buildPayload);
+      /**
+       * Displays a notification popup using the Toastify JS library.
+       */
+      function showNotification(message, type = 'success') {
+          Toastify({
+              text: message,
+              duration: 3000,
+              close: true,
+              gravity: "bottom",
+              position: "center",
+              stopOnFocus: true,
+              style: {
+                  background: type === 'success' ?
+                      "linear-gradient(to right, #00b09b, #96c93d)" : "linear-gradient(to right, #ff5f6d, #ffc371)",
+              },
+          }).showToast();
+      }
 
-    renderChannels(pinCountInput.value);
-    updateStatus();
-    setInterval(updateStatus, 3000);
+      /**
+       * Checks all schedules and enables/disables main controls if within a scheduled time.
+       */
+      function checkSchedules() {
+          const now = new Date();
+          const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+
+          document.querySelectorAll('.card').forEach(card => {
+              const scheduleToggle = card.querySelector('.schedule-toggle');
+              const mainControls = card.querySelector('.main-controls');
+
+              if (scheduleToggle && scheduleToggle.checked) {
+                  const startTimeVal = card.querySelector('.start-time').value;
+                  const endTimeVal = card.querySelector('.end-time').value;
+
+                  if (startTimeVal && endTimeVal) {
+                      const [startHour, startMinute] = startTimeVal.split(':').map(Number);
+                      const [endHour, endMinute] = endTimeVal.split(':').map(Number);
+                      const startTimeInMinutes = startHour * 60 + startMinute;
+                      const endTimeInMinutes = endHour * 60 + endMinute;
+
+                      let isWithinSchedule = false;
+                      // Handle overnight schedule (e.g., 22:00 to 06:00)
+                      if (startTimeInMinutes > endTimeInMinutes) {
+                          isWithinSchedule = currentTimeInMinutes >= startTimeInMinutes || currentTimeInMinutes < endTimeInMinutes;
+                      } else {
+                          isWithinSchedule = currentTimeInMinutes >= startTimeInMinutes && currentTimeInMinutes < endTimeInMinutes;
+                      }
+
+                      if (isWithinSchedule) {
+                          mainControls.classList.add('opacity-50', 'pointer-events-none');
+                          mainControls.querySelectorAll('input').forEach(input => input.disabled = true);
+                      } else {
+                          mainControls.classList.remove('opacity-50', 'pointer-events-none');
+                          mainControls.querySelectorAll('input:not(.pin-name)').forEach(input => input.disabled = false);
+                      }
+                  }
+              } else {
+                  // If scheduler is off, ensure controls are enabled.
+                  mainControls.classList.remove('opacity-50', 'pointer-events-none');
+                  mainControls.querySelectorAll('input:not(.pin-name)').forEach(input => input.disabled = false);
+              }
+          });
+      }
+
+      /**
+       * Creates a debounced version of a function.
+       */
+      function debounce(func, wait) {
+          let timeout;
+          return function executedFunction(...args) {
+              const later = () => {
+                  clearTimeout(timeout);
+                  func(...args);
+              };
+              clearTimeout(timeout);
+              timeout = setTimeout(later, wait);
+          };
+      }
+
+      /**
+       * Sends settings to the server.
+       */
+      async function sendSettings(settings) {
+          console.log("Sending settings:", settings);
+          try {
+              const response = await fetch('/settings', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(settings)
+              });
+              if (response.ok) {
+                  showNotification('Settings Applied Successfully!');
+              } else {
+                  showNotification('Failed to apply settings.', 'error');
+              }
+          } catch (error) {
+              showNotification('Error: Could not reach server.', 'error');
+          }
+      }
+      const debouncedSendSettings = debounce(sendSettings, 1000);
+
+      /**
+       * Fetches current status from the server and updates the UI.
+       */
+      async function updateStatus() {
+          if (isUpdating) return;
+          try {
+              isUpdating = true;
+              const response = await fetch('/status');
+              const data = await response.json();
+              const allCards = document.querySelectorAll('.card');
+
+              // Sync channel count if necessary
+              if (data.channels && data.channels.length !== allCards.length) {
+                  pinCountInput.value = data.channels.length;
+                  renderChannels(pinCountInput.value);
+                  // After re-rendering, we need to get the new set of cards
+                  allCards = document.querySelectorAll('.card');
+              }
+
+              // Update each card with data from the server
+              data.channels?.forEach((channel, i) => {
+                  const card = allCards[i];
+                  if (card) {
+                      card.querySelector('.pin-name').value = channel.pin || '';
+                      card.querySelector('.led-toggle').checked = channel.state;
+                      card.querySelector('.brightness-slider').value = channel.brightness;
+                      card.querySelector('.brightness-value').textContent = `${channel.brightness}%`;
+                      card.querySelector('.schedule-toggle').checked = channel.schedulerEnabled;
+                      card.querySelector('.start-time').value = channel.scheduler_start || '';
+                      card.querySelector('.end-time').value = channel.scheduler_end || '';
+                      card.querySelector('.scheduler-brightness-slider').value = channel.scheduler_brightness || 100;
+                      card.querySelector('.scheduler-brightness-value').textContent = `${channel.scheduler_brightness || 100}%`;
+                      updateSchedulerControls(card);
+                  }
+              });
+
+              timezoneSelect.value = data.gmt_offset;
+
+          } catch (error) {
+              console.error('Error fetching status:', error);
+          } finally {
+              isUpdating = false;
+          }
+      }
+
+      /**
+       * Gathers all settings from the UI and prepares the payload.
+       */
+      function buildPayload() {
+          if (isUpdating) return;
+          const allCards = document.querySelectorAll('.card');
+          const payload = {
+              channels: Array.from(allCards).map(card => ({
+                  pin: card.querySelector('.pin-name').value,
+                  state: card.querySelector('.led-toggle').checked,
+                  schedulerEnabled: card.querySelector('.schedule-toggle').checked,
+                  scheduler_start: card.querySelector('.start-time').value,
+                  scheduler_end: card.querySelector('.end-time').value,
+                  brightness: parseInt(card.querySelector('.brightness-slider').value),
+                  scheduler_brightness: parseInt(card.querySelector('.scheduler-brightness-slider').value)
+              })),
+              gmt_offset: parseInt(timezoneSelect.value)
+          };
+          debouncedSendSettings(payload);
+      }
+
+      // --- EVENT LISTENERS ---
+
+      pinCountInput.addEventListener('change', () => {
+          renderChannels(parseInt(pinCountInput.value));
+          buildPayload();
+      });
+
+      timezoneSelect.addEventListener('change', buildPayload);
+
+      // Use event delegation for controls inside dynamically added cards
+      pwmControlsContainer.addEventListener('input', (e) => {
+          const target = e.target;
+          const card = target.closest('.card');
+          if (!card) return;
+
+          if (target.classList.contains('brightness-slider')) {
+              card.querySelector('.brightness-value').textContent = `${target.value}%`;
+          } else if (target.classList.contains('scheduler-brightness-slider')) {
+              card.querySelector('.scheduler-brightness-value').textContent = `${target.value}%`;
+          } else if (target.classList.contains('schedule-toggle')) {
+              updateSchedulerControls(card);
+          }
+          buildPayload();
+      });
+
+      // --- INITIALIZATION ---
+      renderChannels(parseInt(pinCountInput.value));
+      updateStatus();
+      setInterval(updateStatus, 3000); // Poll for status updates
+      setInterval(checkSchedules, 5000); // Check schedules periodically
+  });
   </script>
 </body>
 </html>
