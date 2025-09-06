@@ -5,6 +5,7 @@ LedController::LedController(bool inverted) : _invertingLogic(inverted) {}
 void LedController::begin() {
     // Initialization of pins is now handled dynamically in update()
     // to support changing pin configurations.
+    //analogWriteFreq(PWM_FREQ); // Set to 128Hz
     analogWriteRange(PWM_RANGE);
 }
 

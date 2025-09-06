@@ -12,6 +12,7 @@ WiFiConnector::WiFiConnector(const char* ssid, const char* password, int statusL
 
 void WiFiConnector::connect() {
     Serial.println("[WiFi] Starting connection process...");
+    WiFi.setSleepMode(WIFI_NONE_SLEEP); // Disable WiFi sleep mode
     _currentState = WIFI_CONNECTING;
     _lastAttemptTimestamp = millis();
     WiFi.begin(_ssid, _password);

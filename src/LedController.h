@@ -29,6 +29,7 @@ private:
     bool _invertingLogic;
     // The ESP8266 has a 10-bit PWM resolution, so the range is 0-255.
     const int PWM_RANGE = 255;
+    //const int PWM_FREQ = 128; // Set PWM frequency to 128Hz
     int pinNameToNumber(const String& pinName);
 };
 

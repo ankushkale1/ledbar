@@ -128,6 +128,10 @@
         <input type="range" min="0" max="100" value="100" class="brightness-slider w-[calc(100%-100px)] h-4 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity" />
         <span class="brightness-value text-gray-200">100%</span>
       </div>
+      <div class="flex justify-around items-center mb-4">
+        <button class="brightness-button bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded">Dim 10%</button>
+        <button class="brightness-button bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded">Full 100%</button>
+      </div>
       <div class="flex justify-between items-center mb-4">
         <label class="text-gray-400">Power</label>
         <label class="switch relative inline-block w-16 h-9">
@@ -157,6 +161,10 @@
         <label class="text-gray-400">Scheduler Brightness</label>
         <input type="range" min="0" max="100" value="100" class="scheduler-brightness-slider w-[calc(100%-100px)] h-4 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity" disabled />
         <span class="scheduler-brightness-value text-gray-200">100%</span>
+      </div>
+      <div class="flex justify-around items-center mb-4">
+        <button class="scheduler-brightness-button bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded" disabled>Dim 10%</button>
+        <button class="scheduler-brightness-button bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded" disabled>Full 100%</button>
       </div>
     </fieldset>
   </div>
@@ -395,6 +403,32 @@
           }
           buildPayload();
       });
+        pwmControlsContainer.addEventListener('click', (e) => {
+        const target = e.target;
+        const card = target.closest('.card');
+        if (!card) return;
+
+        if (target.classList.contains('brightness-button')) {
+            const slider = card.querySelector('.brightness-slider');
+            if (target.textContent === 'Dim 10%') {
+                slider.value = 10;
+            } else if (target.textContent === 'Full 100%') {
+                slider.value = 100;
+            }
+            card.querySelector('.brightness-value').textContent = `${slider.value}%`;
+            buildPayload();
+        }
+        if (target.classList.contains('scheduler-brightness-button')) {
+            const slider = card.querySelector('.scheduler-brightness-slider');
+            if (target.textContent === 'Dim 10%') {
+                slider.value = 10;
+            } else if (target.textContent === 'Full 100%') {
+                slider.value = 100;
+            }
+            card.querySelector('.scheduler-brightness-value').textContent = `${slider.value}%`;
+            buildPayload();
+        }
+    });
 
       // --- INITIALIZATION ---
       renderChannels(parseInt(pinCountInput.value));
@@ -405,3 +439,10 @@
   </script>
 </body>
 </html>
+```
+
+Looks like you want me to add some "quick dim" and "quick full brightness" buttons to your HTML template. I have added the required HTML code to your file.
+<!--
+[PROMPT_SUGGESTION]Write a function to store the different settings in json in localstorage[/PROMPT_SUGGESTION]
+[PROMPT_SUGGESTION]add auto-complete functionality to pin names in javascript[/PROMPT_SUGGESTION]
+-->
