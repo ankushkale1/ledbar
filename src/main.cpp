@@ -7,15 +7,16 @@
 #include "MDNSManager.h"
 #include "WebServerController.h"
 #include "MotionSensor.h"
+#include "OTAUpdater.h"
 
 // --- Project Configuration ---
 // WiFi Credentials
-const char* WIFI_SSID = "JioFiber-4G";
-const char* WIFI_PASSWORD = "Ak@00789101112";
+const char *WIFI_SSID = "JioFiber-4G";
+const char *WIFI_PASSWORD = "Ak@00789101112";
 
 // Pin Assignments
-const int STATUS_LED_PIN = D4;    // On-board LED used for status (GPIO2)
-const char* MDNS_HOSTNAME = "ledbar"; // mDNS hostname for the device
+const int STATUS_LED_PIN = D4;        // On-board LED used for status (GPIO2)
+const char *MDNS_HOSTNAME = "ledbar"; // mDNS hostname for the device
 
 const int INVERTING_LOGIC = true;
 const int MOTION_SENSOR_PIN = D0; // Example pin, change as needed.
@@ -32,18 +33,20 @@ Scheduler scheduler;
 MDNSManager mdnsManager(MDNS_HOSTNAME);
 WebServerController webServerController(80, settingsManager, ledController, scheduler, timeManager);
 MotionSensor motionSensor(MOTION_SENSOR_PIN);
+OTAUpdater otaUpdater(MDNS_HOSTNAME);
 
 // --- Timer for non-blocking scheduler check ---
 unsigned long lastSchedulerCheck = 0;
 const long SCHEDULER_CHECK_INTERVAL = 1000; // Check every second
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
     Serial.println("\n[Main] Booting device...");
 
     // 1. Initialize filesystem and load settings
     settingsManager.begin();
-    DeviceSettings& settings = settingsManager.getSettings();
+    DeviceSettings &settings = settingsManager.getSettings();
 
     // 2. Initialize LED controller and apply loaded settings
     ledController.begin();
@@ -51,33 +54,41 @@ void setup() {
 
     // 3. Initialize Scheduler with loaded settings
     scheduler.updateSchedule(settings);
-    
+
     // 3.5. Initialize Motion Sensor
     motionSensor.begin();
 
     // 4. Connect to WiFi (this is a blocking section by design for initial setup)
     wifiConnector.connect();
-    while (!wifiConnector.isConnected()) {
+    while (!wifiConnector.isConnected())
+    {
         wifiConnector.handleConnection(); // Manages status LED and retries
         // Yield to allow background processes to run
-        yield(); 
+        yield();
     }
 
     // 5. Initialize Time Manager and perform initial sync
     timeManager.begin();
     timeManager.setTimezone(settings.gmtOffsetSeconds);
     timeManager.update(); // Force initial update
-    
+
     // 6. Initialize mDNS
     mdnsManager.begin();
 
     // 7. Initialize and start the Web Server
     webServerController.begin();
 
+    otaUpdater.begin();
+    Serial.println("[OTA] Ready for updates");
+
     Serial.println("[Main] Setup complete. System running.");
 }
 
-void loop() {
+void loop()
+{
+    // Handle OTA updates
+    ArduinoOTA.handle();
+
     // Must be called every loop to service web requests
     webServerController.handleClient();
 
@@ -88,24 +99,29 @@ void loop() {
     wifiConnector.handleConnection();
 
     // Periodically update time from NTP server
-    if (wifiConnector.isConnected()) {
+    if (wifiConnector.isConnected())
+    {
         timeManager.update();
     }
 
     // Motion detection logic
     int currentHour = timeManager.getHours();
-    if (motionSensor.motionDetected() && (currentHour >= MOTION_ON_HOUR || currentHour < MOTION_OFF_HOUR)) {
+    if (motionSensor.motionDetected() && (currentHour >= MOTION_ON_HOUR || currentHour < MOTION_OFF_HOUR))
+    {
         Serial.println("[Main] Motion detected at night. Turning on lights.");
-        DeviceSettings& settings = settingsManager.getSettings();
+        DeviceSettings &settings = settingsManager.getSettings();
 
         bool settingsChanged = false;
-        for (auto& channel : settings.channels) {
-            if (!channel.state) {
+        for (auto &channel : settings.channels)
+        {
+            if (!channel.state)
+            {
                 channel.state = true;
                 settingsChanged = true;
             }
         }
-        if (settingsChanged) {
+        if (settingsChanged)
+        {
             ledController.update(settings);
         }
 
@@ -114,45 +130,56 @@ void loop() {
 
         Serial.println("[Main] Motion timeout. Turning off lights.");
         settingsChanged = false;
-        for (auto& channel : settings.channels) {
-            if (channel.state) {
+        for (auto &channel : settings.channels)
+        {
+            if (channel.state)
+            {
                 channel.state = false;
                 settingsChanged = true;
             }
         }
-        if (settingsChanged) {
+        if (settingsChanged)
+        {
             ledController.update(settings);
         }
-    } else {
+    }
+    else
+    {
         // Check the scheduler periodically (non-blocking)
-        if (millis() - lastSchedulerCheck > SCHEDULER_CHECK_INTERVAL) {
+        if (millis() - lastSchedulerCheck > SCHEDULER_CHECK_INTERVAL)
+        {
             lastSchedulerCheck = millis();
 
-            if (wifiConnector.isConnected()) {
-                DeviceSettings& settings = settingsManager.getSettings();
+            if (wifiConnector.isConnected())
+            {
+                DeviceSettings &settings = settingsManager.getSettings();
                 std::vector<SchedulerAction> actions = scheduler.checkSchedule(
                     timeManager.getHours(),
                     timeManager.getMinutes());
 
                 bool settingsChanged = false;
 
-                for (const auto& action : actions) {
+                for (const auto &action : actions)
+                {
                     Serial.printf("[Main] Scheduler Action: Channel: %s, State: %s, Brightness: %d\n",
                                   action.channel.c_str(),
                                   action.stateOnOFF ? "ON" : "OFF",
                                   action.brightness);
                     // Update the LED controller based on the action
 
-                    for (auto& channel : settings.channels) {
-                        if (channel.pin == action.channel) {
-                            if(channel.scheduleEnabled && action.stateOnOFF)
+                    for (auto &channel : settings.channels)
+                    {
+                        if (channel.pin == action.channel)
+                        {
+                            if (channel.scheduleEnabled && action.stateOnOFF)
                                 channel.schedulerActive = true;
-                            else 
+                            else
                                 channel.schedulerActive = false;
                             settingsChanged = true;
                         }
                     }
-                    if (settingsChanged) {
+                    if (settingsChanged)
+                    {
                         ledController.update(settings);
                     }
                 }
