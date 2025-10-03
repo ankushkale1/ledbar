@@ -722,7 +722,7 @@
             updateScheduleChecking();
           }
           const target = e.target;
-          const card = target.closest(".card");
+          const card = $(target.closest(".card"));
           if (!card) return;
 
           const $target = $(e.target);
