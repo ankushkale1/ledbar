@@ -1,29 +1,38 @@
 #include "SettingsManager.h"
 #include <ArduinoJson.h>
 
-SettingsManager::SettingsManager() {
+SettingsManager::SettingsManager()
+{
     // Initialization is handled in begin() to ensure filesystem is ready.
 }
 
-void SettingsManager::begin() {
-    if (mountFS()) {
-        if (!loadSettings()) {
+void SettingsManager::begin()
+{
+    if (mountFS())
+    {
+        if (!loadSettings())
+        {
             Serial.println("[Settings] No settings file found or file corrupted, creating default settings.");
             // Populate with some default channels if none exist to prevent empty settings
-            if (settings.channels.empty()) {
+            if (settings.channels.empty())
+            {
                 settings.channels.push_back({"D1", false, 80});
                 settings.channels.push_back({"D2", false, 80});
             }
             saveSettings();
         }
-    } else {
+    }
+    else
+    {
         Serial.println("[Settings] CRITICAL: Filesystem could not be mounted.");
     }
 }
 
-bool SettingsManager::loadSettings() {
+bool SettingsManager::loadSettings()
+{
     File configFile = LittleFS.open("/settings.json", "r");
-    if (!configFile) {
+    if (!configFile)
+    {
         Serial.println("[Settings] Failed to open config file for reading.");
         return false;
     }
@@ -34,7 +43,8 @@ bool SettingsManager::loadSettings() {
     DeserializationError error = deserializeJson(doc, configFile);
     configFile.close();
 
-    if (error) {
+    if (error)
+    {
         Serial.print(F("[Settings] deserializeJson() failed: "));
         Serial.println(error.c_str());
         return false;
@@ -46,9 +56,11 @@ bool SettingsManager::loadSettings() {
     // Load channel settings
     settings.channels.clear(); // Clear existing channels before loading new ones
     JsonArray channelsArray = doc["channels"].as<JsonArray>();
-    for (JsonObject channelJson : channelsArray) {
+    for (JsonObject channelJson : channelsArray)
+    {
         ChannelSetting ch;
         ch.pin = channelJson["pin"].as<String>();
+        ch.channelName = channelJson["channelName"].as<String>();
         ch.state = channelJson["state"];
         ch.brightness = channelJson["brightness"];
         ch.scheduleEnabled = doc["sch_en"] | true;
@@ -62,9 +74,11 @@ bool SettingsManager::loadSettings() {
     return true;
 }
 
-bool SettingsManager::saveSettings() {
+bool SettingsManager::saveSettings()
+{
     File configFile = LittleFS.open("/settings.json", "w");
-    if (!configFile) {
+    if (!configFile)
+    {
         Serial.println("[Settings] Failed to open config file for writing.");
         return false;
     }
@@ -76,9 +90,11 @@ bool SettingsManager::saveSettings() {
 
     // Save channel settings
     JsonArray channels = doc.createNestedArray("channels");
-    for (const auto& ch_setting : settings.channels) {
+    for (const auto &ch_setting : settings.channels)
+    {
         JsonObject channel = channels.createNestedObject();
         channel["pin"] = ch_setting.pin;
+        channel["channelName"] = ch_setting.channelName;
         channel["state"] = ch_setting.state;
         channel["brightness"] = ch_setting.brightness;
         channel["sch_en"] = ch_setting.scheduleEnabled;
@@ -87,7 +103,8 @@ bool SettingsManager::saveSettings() {
         channel["sch_brightness"] = ch_setting.sheduledBrightness;
     }
 
-    if (serializeJson(doc, configFile) == 0) {
+    if (serializeJson(doc, configFile) == 0)
+    {
         Serial.println(F("[Settings] Failed to write to config file."));
         configFile.close();
         return false;
@@ -98,17 +115,23 @@ bool SettingsManager::saveSettings() {
     return true;
 }
 
-DeviceSettings& SettingsManager::getSettings() {
+DeviceSettings &SettingsManager::getSettings()
+{
     return settings;
 }
 
-bool SettingsManager::mountFS() {
-    if (!LittleFS.begin()) {
+bool SettingsManager::mountFS()
+{
+    if (!LittleFS.begin())
+    {
         Serial.println("[Settings] Failed to mount file system. Formatting...");
-        if (LittleFS.format()) {
+        if (LittleFS.format())
+        {
             Serial.println("[Settings] Filesystem formatted successfully.");
             return LittleFS.begin();
-        } else {
+        }
+        else
+        {
             Serial.println("[Settings] Filesystem format failed.");
             return false;
         }

@@ -28,7 +28,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #475569; /* slate-600 for off state */
+        background-color: #475569;
         transition: 0.4s;
         border-radius: 34px;
       }
@@ -44,7 +44,7 @@
         border-radius: 50%;
       }
       input:checked + .slider {
-        background-color: #10b981; /* emerald-500 for on state */
+        background-color: #10b981;
       }
       input:checked + .slider:before {
         transform: translateX(26px);
@@ -56,7 +56,7 @@
         width: calc(100% - 100px);
         height: 8px;
         border-radius: 4px;
-        background: #334155; /* slate-700 background */
+        background: #334155;
         outline: none;
         transition: opacity 0.2s;
       }
@@ -69,149 +69,206 @@
         -webkit-appearance: none;
         width: 20px;
         height: 20px;
-        background: #3b82f6; /* blue-500 */
+        background: #3b82f6;
         cursor: pointer;
         border-radius: 50%;
-        border: 2px solid #1e293b; /* slate-800 border */
+        border: 2px solid #1e293b;
       }
       .brightness-slider::-moz-range-thumb,
       .scheduler-brightness-slider::-moz-range-thumb {
         width: 20px;
         height: 20px;
-        background: #3b82f6; /* blue-500 */
+        background: #3b82f6;
         cursor: pointer;
         border-radius: 50%;
         border: 2px solid #1e293b;
       }
       .brightness-slider::-webkit-slider-thumb:hover,
       .scheduler-brightness-slider::-webkit-slider-thumb:hover {
-        background: #60a5fa; /* blue-400 */
+        background: #60a5fa;
       }
       .brightness-slider::-moz-range-thumb:hover,
       .scheduler-brightness-slider::-moz-range-thumb:hover {
         background: #60a5fa;
       }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .card {
+        animation: fadeIn 0.3s ease-out;
+      }
+      .edit-icon {
+        transition: all 0.2s ease;
+      }
+      .edit-icon:hover {
+        transform: scale(1.1);
+        color: #3b82f6;
+      }
+      button {
+        transition: all 0.2s ease;
+      }
+      button:active {
+        transform: scale(0.95);
+      }
+      input[type="text"]:focus,
+      input[type="number"]:focus,
+      input[type="time"]:focus,
+      select:focus {
+        transform: scale(1.01);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
     </style>
   </head>
-  <body
-    class="bg-slate-900 text-slate-200 min-h-screen flex justify-center p-4"
-  >
-    <div class="container max-w-md w-full">
+  <body class="bg-slate-900 text-slate-200 min-h-screen p-4">
+    <div class="container max-w-7xl w-full mx-auto">
       <h1
         class="text-2xl font-bold text-slate-100 border-b border-slate-700 pb-2 mb-6"
       >
         Multi-Channel PWM Controller
       </h1>
 
-      <div
-        class="bg-slate-800 rounded-lg p-6 mb-4 shadow-lg border border-slate-700"
-      >
-        <h2
-          class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div
+          class="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700"
         >
-          Configuration
-        </h2>
-        <div class="flex justify-between items-center mb-4">
-          <label for="pin-count" class="text-slate-300">PWM Pin Count</label>
-          <input
-            type="number"
-            id="pin-count"
-            min="1"
-            max="10"
-            value="1"
-            class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none"
-          />
+          <h2
+            class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
+          >
+            Configuration
+          </h2>
+          <div class="flex justify-between items-center">
+            <label for="pin-count" class="text-slate-300">PWM Pin Count</label>
+            <input
+              type="number"
+              id="pin-count"
+              min="1"
+              max="10"
+              value="2"
+              class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-20 text-center"
+            />
+          </div>
+        </div>
+
+        <div
+          class="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700"
+        >
+          <h2
+            class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
+          >
+            Timezone
+          </h2>
+          <div class="flex flex-col gap-2">
+            <label for="timezone-select" class="text-slate-300"
+              >Select Timezone</label
+            >
+            <select
+              id="timezone-select"
+              class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none"
+            >
+              <option value="-43200">
+                (GMT-12:00) International Date Line West
+              </option>
+              <option value="-39600">
+                (GMT-11:00) Coordinated Universal Time-11
+              </option>
+              <option value="-36000">(GMT-10:00) Hawaii</option>
+              <option value="-32400">(GMT-09:00) Alaska</option>
+              <option value="-28800">
+                (GMT-08:00) Pacific Time (US & Canada)
+              </option>
+              <option value="-25200">
+                (GMT-07:00) Mountain Time (US & Canada)
+              </option>
+              <option value="-21600">
+                (GMT-06:00) Central Time (US & Canada)
+              </option>
+              <option value="-18000">
+                (GMT-05:00) Eastern Time (US & Canada)
+              </option>
+              <option value="-14400">(GMT-04:00) Atlantic Time (Canada)</option>
+              <option value="-10800">(GMT-03:00) Buenos Aires</option>
+              <option value="-7200">
+                (GMT-02:00) Coordinated Universal Time-02
+              </option>
+              <option value="-3600">(GMT-01:00) Azores</option>
+              <option value="0">(GMT+00:00) London, Dublin, Lisbon</option>
+              <option value="3600">
+                (GMT+01:00) Amsterdam, Berlin, Rome, Paris
+              </option>
+              <option value="7200">
+                (GMT+02:00) Athens, Helsinki, Jerusalem
+              </option>
+              <option value="10800">(GMT+03:00) Moscow, St. Petersburg</option>
+              <option value="12600">(GMT+03:30) Tehran</option>
+              <option value="14400">(GMT+04:00) Abu Dhabi, Muscat</option>
+              <option value="16200">(GMT+04:30) Kabul</option>
+              <option value="18000">(GMT+05:00) Islamabad, Karachi</option>
+              <option value="19800" selected>
+                (GMT+05:30) India Standard Time (IST)
+              </option>
+              <option value="20700">(GMT+05:45) Kathmandu</option>
+              <option value="21600">(GMT+06:00) Dhaka</option>
+              <option value="25200">(GMT+07:00) Bangkok, Hanoi, Jakarta</option>
+              <option value="28800">
+                (GMT+08:00) Beijing, Perth, Singapore
+              </option>
+              <option value="32400">(GMT+09:00) Tokyo, Seoul, Osaka</option>
+              <option value="34200">(GMT+09:30) Adelaide, Darwin</option>
+              <option value="36000">(GMT+10:00) Sydney, Melbourne, Guam</option>
+              <option value="39600">
+                (GMT+11:00) Solomon Is., New Caledonia
+              </option>
+              <option value="43200">
+                (GMT+12:00) Auckland, Wellington, Fiji
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <div id="pwm-controls-container"></div>
-
       <div
-        class="bg-slate-800 rounded-lg p-6 mb-4 shadow-lg border border-slate-700"
-      >
-        <h2
-          class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
-        >
-          Timezone
-        </h2>
-        <div class="flex justify-between items-center mb-4">
-          <label for="timezone-select" class="text-slate-300"
-            >Select Timezone</label
-          >
-          <select
-            id="timezone-select"
-            class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 w-full focus:border-blue-500 focus:outline-none"
-          >
-            <option value="-43200">
-              (GMT-12:00) International Date Line West
-            </option>
-            <option value="-39600">
-              (GMT-11:00) Coordinated Universal Time-11
-            </option>
-            <option value="-36000">(GMT-10:00) Hawaii</option>
-            <option value="-32400">(GMT-09:00) Alaska</option>
-            <option value="-28800">
-              (GMT-08:00) Pacific Time (US & Canada)
-            </option>
-            <option value="-25200">
-              (GMT-07:00) Mountain Time (US & Canada)
-            </option>
-            <option value="-21600">
-              (GMT-06:00) Central Time (US & Canada)
-            </option>
-            <option value="-18000">
-              (GMT-05:00) Eastern Time (US & Canada)
-            </option>
-            <option value="-14400">(GMT-04:00) Atlantic Time (Canada)</option>
-            <option value="-10800">(GMT-03:00) Buenos Aires</option>
-            <option value="-7200">
-              (GMT-02:00) Coordinated Universal Time-02
-            </option>
-            <option value="-3600">(GMT-01:00) Azores</option>
-            <option value="0">(GMT+00:00) London, Dublin, Lisbon</option>
-            <option value="3600">
-              (GMT+01:00) Amsterdam, Berlin, Rome, Paris
-            </option>
-            <option value="7200">
-              (GMT+02:00) Athens, Helsinki, Jerusalem
-            </option>
-            <option value="10800">(GMT+03:00) Moscow, St. Petersburg</option>
-            <option value="12600">(GMT+03:30) Tehran</option>
-            <option value="14400">(GMT+04:00) Abu Dhabi, Muscat</option>
-            <option value="16200">(GMT+04:30) Kabul</option>
-            <option value="18000">(GMT+05:00) Islamabad, Karachi</option>
-            <option value="19800" selected>
-              (GMT+05:30) India Standard Time (IST)
-            </option>
-            <option value="20700">(GMT+05:45) Kathmandu</option>
-            <option value="21600">(GMT+06:00) Dhaka</option>
-            <option value="25200">(GMT+07:00) Bangkok, Hanoi, Jakarta</option>
-            <option value="28800">(GMT+08:00) Beijing, Perth, Singapore</option>
-            <option value="32400">(GMT+09:00) Tokyo, Seoul, Osaka</option>
-            <option value="34200">(GMT+09:30) Adelaide, Darwin</option>
-            <option value="36000">(GMT+10:00) Sydney, Melbourne, Guam</option>
-            <option value="39600">
-              (GMT+11:00) Solomon Is., New Caledonia
-            </option>
-            <option value="43200">
-              (GMT+12:00) Auckland, Wellington, Fiji
-            </option>
-          </select>
-        </div>
-      </div>
+        id="pwm-controls-container"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"
+      ></div>
     </div>
 
-    <!-- HTML Templates -->
     <template id="channel-template">
       <div
-        class="card bg-slate-800 rounded-lg p-6 mb-4 shadow-lg border border-slate-700"
-        data-index="{{index}}"
+        class="card bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700"
       >
-        <h2
-          class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
+        <div
+          class="flex justify-between items-center border-b border-slate-700 pb-2 mb-4"
         >
-          Channel {{channelNum}}
-        </h2>
+          <h2 class="text-xl font-semibold text-slate-100 channel-name-display">
+            Channel 1
+          </h2>
+          <button
+            class="edit-channel-name text-slate-400 hover:text-blue-400 transition-colors"
+            title="Edit channel name"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 edit-icon"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+              />
+            </svg>
+          </button>
+        </div>
         <div class="main-controls">
           <div class="flex justify-between items-center mb-4">
             <label class="text-slate-300">Pin Name</label>
@@ -319,27 +376,43 @@
 
     <script>
       $(document).ready(() => {
-        // Element references using jQuery
         const $pinCountInput = $("#pin-count");
         const $pwmControlsContainer = $("#pwm-controls-container");
         const $timezoneSelect = $("#timezone-select");
         const $channelTemplate = $("#channel-template");
+        let isUpdating = false;
+        let lastSentState = null;
+        let lastConfirmedState = null;
+        let statusPollInterval = null;
+        let needsPolling = true;
+        let scheduleCheckInterval = null;
+        let nextScheduleCheck = null;
 
-        let isUpdating = false; // A flag to prevent re-entrant function calls
-        let lastSentState = null; // Track last sent state
-        let lastConfirmedState = null; // Track last confirmed state from server
-        let statusPollInterval = null; // Reference to polling interval
-        let needsPolling = true; // Flag to indicate if we need to poll
-        let scheduleCheckInterval = null; // Reference to schedule checking interval
-        let nextScheduleCheck = null; // Next time we need to check schedules
+        async function updateChannelName(index, newName) {
+          try {
+            await $.ajax({
+              url: "/channel/name",
+              method: "POST",
+              contentType: "application/json",
+              data: JSON.stringify({
+                channelIndex: index,
+                channelName: newName,
+              }),
+              success: () =>
+                showNotification("Channel name updated successfully!"),
+              error: () =>
+                showNotification("Failed to update channel name.", "error"),
+            });
+          } catch (error) {
+            showNotification("Error: Could not reach server.", "error");
+          }
+        }
 
         function areStatesEqual(state1, state2) {
           if (!state1 || !state2) return false;
-
           if (state1.gmt_offset !== state2.gmt_offset) return false;
           if (!state1.channels || !state2.channels) return false;
           if (state1.channels.length !== state2.channels.length) return false;
-
           return state1.channels.every((channel, index) => {
             const channel2 = state2.channels[index];
             return (
@@ -354,12 +427,8 @@
           });
         }
 
-        /**
-         * Starts or stops status polling based on need
-         */
         function updatePollingState() {
           const shouldPoll = !areStatesEqual(lastSentState, lastConfirmedState);
-
           if (shouldPoll && !statusPollInterval) {
             statusPollInterval = setInterval(updateStatus, 3000);
             needsPolling = true;
@@ -370,43 +439,30 @@
           }
         }
 
-        /**
-         * Toggles the disabled state of scheduler inputs based on the schedule checkbox.
-         * @param {HTMLElement} card The card element to update.
-         */
         function updateSchedulerControls($card) {
           const $scheduleToggle = $card.find(".schedule-toggle");
           const $fieldset = $card.find(".scheduler-fieldset");
-          // Disable all inputs within the fieldset except for the toggle itself
           $fieldset
             .find("input, select, button")
             .not(".schedule-toggle")
             .prop("disabled", !$scheduleToggle.prop("checked"));
         }
 
-        /**
-         * Renders the specified number of channel control cards.
-         * @param {number} count The number of channels to render.
-         */
         function renderChannels(count) {
           $pwmControlsContainer.empty();
           if (!$channelTemplate.length) return;
-
           for (let i = 0; i < count; i++) {
-            const $clone = $($channelTemplate.html());
-            const $card = $clone.filter(".card");
+            const $card = $($channelTemplate.html());
             $card.attr("data-index", i);
-            $card.find("h2").text(`Channel ${i + 1}`);
+            $card.find(".channel-name-display").text(`Channel ${i + 1}`);
+            $card.data("channelName", `Channel ${i + 1}`);
             $pwmControlsContainer.append($card);
             updateSchedulerControls($card);
           }
         }
 
-        /**
-         * Displays a notification popup using the Toastify JS library.
-         */
         function showNotification(message, type = "success") {
-          const options = {
+          Toastify({
             text: message,
             duration: 3000,
             close: true,
@@ -419,55 +475,32 @@
                   ? "linear-gradient(to right, #10b981, #34d399)"
                   : "linear-gradient(to right, #ef4444, #f87171)",
             },
-          };
-
-          $(function () {
-            Toastify(options).showToast();
-          });
+          }).showToast();
         }
 
-        /**
-         * Calculate the next time we need to check schedules
-         */
         function calculateNextScheduleCheck() {
           const now = new Date();
           const activeSchedules = [];
-
           $(".card").each(function () {
             const $card = $(this);
             if (!$card.find(".schedule-toggle").prop("checked")) return;
-
             const startTime = $card.find(".start-time").val();
             const endTime = $card.find(".end-time").val();
             if (!startTime || !endTime) return;
-
             const [startHour, startMinute] = startTime.split(":").map(Number);
             const [endHour, endMinute] = endTime.split(":").map(Number);
-
-            // Add both start and end times to active schedules
-            activeSchedules.push({
-              hour: startHour,
-              minute: startMinute,
-            });
-            activeSchedules.push({
-              hour: endHour,
-              minute: endMinute,
-            });
+            activeSchedules.push({ hour: startHour, minute: startMinute });
+            activeSchedules.push({ hour: endHour, minute: endMinute });
           });
-
           if (activeSchedules.length === 0) {
-            // No active schedules, stop checking
             if (scheduleCheckInterval) {
               clearInterval(scheduleCheckInterval);
               scheduleCheckInterval = null;
             }
             return null;
           }
-
-          // Find the next schedule time
           const currentMinutes = now.getHours() * 60 + now.getMinutes();
           let nextCheckMinutes = Infinity;
-
           activeSchedules.forEach((schedule) => {
             const scheduleMinutes = schedule.hour * 60 + schedule.minute;
             if (
@@ -477,17 +510,12 @@
               nextCheckMinutes = scheduleMinutes;
             }
           });
-
-          // If no future times today, check the first schedule for tomorrow
           if (nextCheckMinutes === Infinity) {
             nextCheckMinutes = Math.min(
               ...activeSchedules.map((s) => s.hour * 60 + s.minute)
             );
-            // Add 24 hours
             nextCheckMinutes += 24 * 60;
           }
-
-          // Set next check time to 1 minute before the schedule
           const nextCheck = new Date();
           nextCheck.setHours(Math.floor(nextCheckMinutes / 60));
           nextCheck.setMinutes(nextCheckMinutes % 60);
@@ -495,63 +523,40 @@
           if (nextCheckMinutes >= 24 * 60) {
             nextCheck.setDate(nextCheck.getDate() + 1);
           }
-          // Subtract 1 minute to check just before the schedule
           nextCheck.setMinutes(nextCheck.getMinutes() - 1);
-
           return nextCheck;
         }
 
-        /**
-         * Update the schedule checking interval
-         */
         function updateScheduleChecking() {
           const nextCheck = calculateNextScheduleCheck();
           if (!nextCheck) return;
-
-          // Clear existing interval if any
           if (scheduleCheckInterval) {
-            window.clearInterval(scheduleCheckInterval);
+            clearInterval(scheduleCheckInterval);
             scheduleCheckInterval = null;
           }
-
-          // Calculate time until next check
           const now = new Date();
           let timeUntilCheck = nextCheck.getTime() - now.getTime();
-
-          // If the next check is less than 1 minute away, check more frequently
           if (timeUntilCheck <= 60000) {
-            scheduleCheckInterval = setInterval(() => $(checkSchedules), 5000); // Check every 5 seconds
+            scheduleCheckInterval = setInterval(checkSchedules, 5000);
           } else {
-            // Set timeout to start frequent checking 1 minute before the schedule
             setTimeout(() => {
-              $(checkSchedules);
-              scheduleCheckInterval = setInterval(
-                () => $(checkSchedules),
-                5000
-              );
+              checkSchedules();
+              scheduleCheckInterval = setInterval(checkSchedules, 5000);
             }, timeUntilCheck);
           }
-
-          // Store next check time
           nextScheduleCheck = nextCheck;
         }
 
-        /**
-         * Checks all schedules and enables/disables main controls if within a scheduled time.
-         */
         function checkSchedules() {
           const now = new Date();
           const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
-
           $(".card").each(function () {
             const $card = $(this);
             const $scheduleToggle = $card.find(".schedule-toggle");
             const $mainControls = $card.find(".main-controls");
-
             if ($scheduleToggle.length && $scheduleToggle.prop("checked")) {
               const startTimeVal = $card.find(".start-time").val();
               const endTimeVal = $card.find(".end-time").val();
-
               if (startTimeVal && endTimeVal) {
                 const [startHour, startMinute] = startTimeVal
                   .split(":")
@@ -559,9 +564,7 @@
                 const [endHour, endMinute] = endTimeVal.split(":").map(Number);
                 const startTimeInMinutes = startHour * 60 + startMinute;
                 const endTimeInMinutes = endHour * 60 + endMinute;
-
                 let isWithinSchedule = false;
-                // Handle overnight schedule (e.g., 22:00 to 06:00)
                 if (startTimeInMinutes > endTimeInMinutes) {
                   isWithinSchedule =
                     currentTimeInMinutes >= startTimeInMinutes ||
@@ -571,7 +574,6 @@
                     currentTimeInMinutes >= startTimeInMinutes &&
                     currentTimeInMinutes < endTimeInMinutes;
                 }
-
                 if (isWithinSchedule) {
                   $mainControls
                     .addClass("opacity-50 pointer-events-none")
@@ -585,7 +587,6 @@
                 }
               }
             } else {
-              // If scheduler is off, ensure controls are enabled.
               $mainControls
                 .removeClass("opacity-50 pointer-events-none")
                 .find("input:not(.pin-name), button")
@@ -593,9 +594,7 @@
             }
           });
         }
-        /**
-         * Creates a debounced version of a function.
-         */
+
         function debounce(func, wait) {
           let timeout;
           return function executedFunction(...args) {
@@ -608,27 +607,19 @@
           };
         }
 
-        /**
-         * Sends settings to the server.
-         */
         async function sendSettings(settings) {
-          console.log("Sending settings:", settings);
           try {
-            lastSentState = settings; // Store what we're sending
-            needsPolling = true; // Start polling to confirm changes
+            lastSentState = settings;
+            needsPolling = true;
             updatePollingState();
-
             await $.ajax({
               url: "/settings",
               method: "POST",
               contentType: "application/json",
               data: JSON.stringify(settings),
-              success: function () {
-                showNotification("Settings Applied Successfully!");
-              },
-              error: function () {
-                showNotification("Failed to apply settings.", "error");
-              },
+              success: () => showNotification("Settings Applied Successfully!"),
+              error: () =>
+                showNotification("Failed to apply settings.", "error"),
             });
           } catch (error) {
             showNotification("Error: Could not reach server.", "error");
@@ -636,33 +627,28 @@
         }
         const debouncedSendSettings = debounce(sendSettings, 1000);
 
-        /**
-         * Fetches current status from the server and updates the UI.
-         */
         async function updateStatus() {
           if (isUpdating || !needsPolling) return;
           try {
             isUpdating = true;
             const data = await $.getJSON("/status");
             lastConfirmedState = data;
-            updatePollingState(); // Check if we need to continue polling
+            updatePollingState();
             const $allCards = $(".card");
-
-            // Sync channel count if necessary
             if (data.channels && data.channels.length !== $allCards.length) {
               $pinCountInput.val(data.channels.length);
-              renderChannels($pinCountInput.val());
+              renderChannels(data.channels.length);
             }
-
-            // Update timezone
             if (data.gmt_offset !== undefined) {
               $timezoneSelect.val(data.gmt_offset);
             }
-
-            // Update each card with data from the server
             data.channels?.forEach((channel, i) => {
               const $card = $(".card").eq(i);
               if ($card.length) {
+                if (channel.channelName) {
+                  $card.find(".channel-name-display").text(channel.channelName);
+                  $card.data("channelName", channel.channelName);
+                }
                 $card.find(".pin-name").val(channel.pin || "");
                 $card.find(".led-toggle").prop("checked", channel.state);
                 $card.find(".brightness-slider").val(channel.brightness);
@@ -681,8 +667,6 @@
                 updateSchedulerControls($card);
               }
             });
-
-            $timezoneSelect.val(data.gmt_offset);
           } catch (error) {
             console.error("Error fetching status:", error);
           } finally {
@@ -690,9 +674,6 @@
           }
         }
 
-        /**
-         * Gathers all settings from the UI and prepares the payload.
-         */
         function buildPayload() {
           if (isUpdating) return;
           const payload = {
@@ -719,8 +700,6 @@
           debouncedSendSettings(payload);
         }
 
-        // --- EVENT LISTENERS ---
-
         $pinCountInput.on("change", () => {
           renderChannels(parseInt($pinCountInput.val()));
           buildPayload();
@@ -728,41 +707,32 @@
 
         $timezoneSelect.on("change", buildPayload);
 
-        // Use event delegation for controls inside dynamically added cards
         $pwmControlsContainer.on("input", "input", (e) => {
-          // Update schedule checking when schedule times change
           if (
             e.target.classList.contains("start-time") ||
             e.target.classList.contains("end-time")
           ) {
             updateScheduleChecking();
           }
-          const target = e.target;
-          const card = $(target.closest(".card"));
-          if (!card) return;
-
           const $target = $(e.target);
           const $card = $target.closest(".card");
-
           if ($target.hasClass("brightness-slider")) {
             $card.find(".brightness-value").text(`${$target.val()}%`);
           } else if ($target.hasClass("scheduler-brightness-slider")) {
             $card.find(".scheduler-brightness-value").text(`${$target.val()}%`);
-          } else if (target.classList.contains("schedule-toggle")) {
-            updateSchedulerControls(card);
-            updateScheduleChecking(); // Update schedule checking when toggle changes
+          } else if (e.target.classList.contains("schedule-toggle")) {
+            updateSchedulerControls($card);
+            updateScheduleChecking();
           }
           buildPayload();
         });
 
-        // Use event delegation for brightness buttons
         $pwmControlsContainer.on(
           "click",
           ".brightness-button, .scheduler-brightness-button",
           function () {
             const $card = $(this).closest(".card");
             const isDimButton = $(this).text().includes("Dim");
-
             const value = isDimButton ? 10 : 100;
             const sliderClass = $(this).hasClass("scheduler-brightness-button")
               ? "scheduler-brightness-slider"
@@ -770,7 +740,6 @@
             const valueClass = $(this).hasClass("scheduler-brightness-button")
               ? "scheduler-brightness-value"
               : "brightness-value";
-
             const $slider = $card.find(`.${sliderClass}`);
             $slider.val(value);
             $card.find(`.${valueClass}`).text(`${value}%`);
@@ -778,12 +747,28 @@
           }
         );
 
-        // --- INITIALIZATION ---
+        $pwmControlsContainer.on("click", ".edit-channel-name", function () {
+          const $card = $(this).closest(".card");
+          const $nameDisplay = $card.find(".channel-name-display");
+          const currentName = $nameDisplay.text();
+          const channelIndex = parseInt($card.attr("data-index"));
+          const newName = prompt("Enter new channel name:", currentName);
+          if (
+            newName !== null &&
+            newName.trim() !== "" &&
+            newName !== currentName
+          ) {
+            $nameDisplay.text(newName.trim());
+            $card.data("channelName", newName.trim());
+            updateChannelName(channelIndex, newName.trim());
+          }
+        });
+
         renderChannels(parseInt($pinCountInput.val()));
-        updateStatus(); // Initial status check
-        updatePollingState(); // Set up initial polling if needed
-        checkSchedules(); // Initial schedule check
-        updateScheduleChecking(); // Set up smart schedule checking
+        updateStatus();
+        updatePollingState();
+        checkSchedules();
+        updateScheduleChecking();
       });
     </script>
   </body>
