@@ -28,7 +28,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #e88080; /* Red for off state */
+        background-color: #475569; /* slate-600 for off state */
         transition: 0.4s;
         border-radius: 34px;
       }
@@ -39,12 +39,12 @@
         width: 26px;
         left: 4px;
         bottom: 4px;
-        background-color: #e5e7eb;
+        background-color: #ffffff;
         transition: 0.4s;
         border-radius: 50%;
       }
       input:checked + .slider {
-        background-color: #22c55e; /* Green for on state */
+        background-color: #10b981; /* emerald-500 for on state */
       }
       input:checked + .slider:before {
         transform: translateX(26px);
@@ -54,14 +54,10 @@
         -webkit-appearance: none;
         appearance: none;
         width: calc(100% - 100px);
-        height: 4px;
-        border-radius: 2px;
-        background: linear-gradient(
-          to right,
-          #4a4a00 0%,
-          #ffff00 100%
-        ); /* Dim to bright yellow gradient */
-        opacity: 0.7;
+        height: 8px;
+        border-radius: 4px;
+        background: #334155; /* slate-700 background */
+        outline: none;
         transition: opacity 0.2s;
       }
       .brightness-slider:hover,
@@ -71,64 +67,80 @@
       .brightness-slider::-webkit-slider-thumb,
       .scheduler-brightness-slider::-webkit-slider-thumb {
         -webkit-appearance: none;
-        width: 25px;
-        height: 25px;
-        background: #6b7280;
+        width: 20px;
+        height: 20px;
+        background: #3b82f6; /* blue-500 */
         cursor: pointer;
         border-radius: 50%;
+        border: 2px solid #1e293b; /* slate-800 border */
       }
       .brightness-slider::-moz-range-thumb,
       .scheduler-brightness-slider::-moz-range-thumb {
-        width: 25px;
-        height: 25px;
-        background: #6b7280;
+        width: 20px;
+        height: 20px;
+        background: #3b82f6; /* blue-500 */
         cursor: pointer;
         border-radius: 50%;
+        border: 2px solid #1e293b;
+      }
+      .brightness-slider::-webkit-slider-thumb:hover,
+      .scheduler-brightness-slider::-webkit-slider-thumb:hover {
+        background: #60a5fa; /* blue-400 */
+      }
+      .brightness-slider::-moz-range-thumb:hover,
+      .scheduler-brightness-slider::-moz-range-thumb:hover {
+        background: #60a5fa;
       }
     </style>
   </head>
-  <body class="bg-gray-800 text-gray-200 min-h-screen flex justify-center p-4">
+  <body
+    class="bg-slate-900 text-slate-200 min-h-screen flex justify-center p-4"
+  >
     <div class="container max-w-md w-full">
       <h1
-        class="text-2xl font-bold text-gray-200 border-b border-gray-600 pb-2"
+        class="text-2xl font-bold text-slate-100 border-b border-slate-700 pb-2 mb-6"
       >
         Multi-Channel PWM Controller
       </h1>
 
-      <div class="bg-gray-700 rounded-lg p-6 mb-4 shadow-md">
+      <div
+        class="bg-slate-800 rounded-lg p-6 mb-4 shadow-lg border border-slate-700"
+      >
         <h2
-          class="text-xl font-semibold text-gray-200 border-b border-gray-600 pb-2"
+          class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
         >
           Configuration
         </h2>
         <div class="flex justify-between items-center mb-4">
-          <label for="pin-count" class="text-gray-400">PWM Pin Count</label>
+          <label for="pin-count" class="text-slate-300">PWM Pin Count</label>
           <input
             type="number"
             id="pin-count"
             min="1"
             max="10"
             value="1"
-            class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2"
+            class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none"
           />
         </div>
       </div>
 
       <div id="pwm-controls-container"></div>
 
-      <div class="bg-gray-700 rounded-lg p-6 mb-4 shadow-md">
+      <div
+        class="bg-slate-800 rounded-lg p-6 mb-4 shadow-lg border border-slate-700"
+      >
         <h2
-          class="text-xl font-semibold text-gray-200 border-b border-gray-600 pb-2"
+          class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
         >
           Timezone
         </h2>
         <div class="flex justify-between items-center mb-4">
-          <label for="timezone-select" class="text-gray-400"
+          <label for="timezone-select" class="text-slate-300"
             >Select Timezone</label
           >
           <select
             id="timezone-select"
-            class="bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 w-full"
+            class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 w-full focus:border-blue-500 focus:outline-none"
           >
             <option value="-43200">
               (GMT-12:00) International Date Line West
@@ -192,48 +204,48 @@
     <!-- HTML Templates -->
     <template id="channel-template">
       <div
-        class="card bg-gray-700 rounded-lg p-6 mb-4 shadow-md"
+        class="card bg-slate-800 rounded-lg p-6 mb-4 shadow-lg border border-slate-700"
         data-index="{{index}}"
       >
         <h2
-          class="text-xl font-semibold text-gray-200 border-b border-gray-600 pb-2"
+          class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
         >
           Channel {{channelNum}}
         </h2>
         <div class="main-controls">
           <div class="flex justify-between items-center mb-4">
-            <label class="text-gray-400">Pin Name</label>
+            <label class="text-slate-300">Pin Name</label>
             <input
               type="text"
               placeholder="e.g., D1"
-              class="pin-name bg-gray-800 text-gray-200 border border-gray-600 rounded p-2"
+              class="pin-name bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none"
             />
           </div>
           <div class="flex justify-between items-center mb-4">
-            <label class="text-gray-400">Brightness</label>
+            <label class="text-slate-300">Brightness</label>
             <input
               type="range"
               min="0"
               max="100"
               value="100"
-              class="brightness-slider w-[calc(100%-100px)] h-4 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity"
+              class="brightness-slider w-[calc(100%-100px)] h-2 rounded appearance-none transition-opacity"
             />
-            <span class="brightness-value text-gray-200">100%</span>
+            <span class="brightness-value text-blue-400 font-medium">100%</span>
           </div>
-          <div class="flex justify-around items-center mb-4">
+          <div class="flex justify-around items-center mb-4 gap-2">
             <button
-              class="brightness-button bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded"
+              class="brightness-button bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-2 px-4 rounded transition-colors border border-slate-600"
             >
               Dim 10%
             </button>
             <button
-              class="brightness-button bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded"
+              class="brightness-button bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded transition-colors"
             >
               Full 100%
             </button>
           </div>
           <div class="flex justify-between items-center mb-4">
-            <label class="text-gray-400">Power</label>
+            <label class="text-slate-300">Power</label>
             <label class="switch relative inline-block w-16 h-9">
               <input type="checkbox" class="led-toggle" />
               <span
@@ -243,11 +255,13 @@
           </div>
         </div>
         <fieldset
-          class="scheduler-fieldset border border-gray-600 rounded p-4 mt-4"
+          class="scheduler-fieldset border border-slate-700 rounded p-4 mt-4"
         >
-          <legend class="text-gray-400 text-base">Scheduler</legend>
+          <legend class="text-slate-200 text-base font-medium">
+            Scheduler
+          </legend>
           <div class="flex justify-between items-center mb-4">
-            <label class="text-gray-400">Enable Schedule</label>
+            <label class="text-slate-300">Enable Schedule</label>
             <label class="switch relative inline-block w-16 h-9">
               <input type="checkbox" class="schedule-toggle" />
               <span
@@ -256,42 +270,44 @@
             </label>
           </div>
           <div class="flex justify-between items-center mb-4">
-            <label class="text-gray-400">On Time</label>
+            <label class="text-slate-300">On Time</label>
             <input
               type="time"
               disabled
-              class="start-time bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 disabled:bg-gray-700 disabled:opacity-60"
+              class="start-time bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 disabled:bg-slate-800 disabled:opacity-50 focus:border-blue-500 focus:outline-none"
             />
           </div>
           <div class="flex justify-between items-center mb-4">
-            <label class="text-gray-400">Off Time</label>
+            <label class="text-slate-300">Off Time</label>
             <input
               type="time"
               disabled
-              class="end-time bg-gray-800 text-gray-200 border border-gray-600 rounded p-2 disabled:bg-gray-700 disabled:opacity-60"
+              class="end-time bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 disabled:bg-slate-800 disabled:opacity-50 focus:border-blue-500 focus:outline-none"
             />
           </div>
           <div class="flex justify-between items-center mb-4">
-            <label class="text-gray-400">Scheduler Brightness</label>
+            <label class="text-slate-300">Scheduler Brightness</label>
             <input
               type="range"
               min="0"
               max="100"
               value="100"
-              class="scheduler-brightness-slider w-[calc(100%-100px)] h-4 rounded appearance-none opacity-70 hover:opacity-100 transition-opacity"
+              class="scheduler-brightness-slider w-[calc(100%-100px)] h-2 rounded appearance-none transition-opacity"
               disabled
             />
-            <span class="scheduler-brightness-value text-gray-200">100%</span>
+            <span class="scheduler-brightness-value text-blue-400 font-medium"
+              >100%</span
+            >
           </div>
-          <div class="flex justify-around items-center mb-4">
+          <div class="flex justify-around items-center mb-4 gap-2">
             <button
-              class="scheduler-brightness-button bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded"
+              class="scheduler-brightness-button bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-2 px-4 rounded transition-colors border border-slate-600"
               disabled
             >
               Dim 10%
             </button>
             <button
-              class="scheduler-brightness-button bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded"
+              class="scheduler-brightness-button bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded transition-colors"
               disabled
             >
               Full 100%
@@ -315,7 +331,7 @@
         let statusPollInterval = null; // Reference to polling interval
         let needsPolling = true; // Flag to indicate if we need to poll
         let scheduleCheckInterval = null; // Reference to schedule checking interval
-        let nextScheduleCheck = null; // Next time we need to check schedules        /**
+        let nextScheduleCheck = null; // Next time we need to check schedules
 
         function areStatesEqual(state1, state2) {
           if (!state1 || !state2) return false;
@@ -363,7 +379,7 @@
           const $fieldset = $card.find(".scheduler-fieldset");
           // Disable all inputs within the fieldset except for the toggle itself
           $fieldset
-            .find("input, select")
+            .find("input, select, button")
             .not(".schedule-toggle")
             .prop("disabled", !$scheduleToggle.prop("checked"));
         }
@@ -400,8 +416,8 @@
             style: {
               background:
                 type === "success"
-                  ? "linear-gradient(to right, #00b09b, #96c93d)"
-                  : "linear-gradient(to right, #ff5f6d, #ffc371)",
+                  ? "linear-gradient(to right, #10b981, #34d399)"
+                  : "linear-gradient(to right, #ef4444, #f87171)",
             },
           };
 
@@ -559,12 +575,12 @@
                 if (isWithinSchedule) {
                   $mainControls
                     .addClass("opacity-50 pointer-events-none")
-                    .find("input")
+                    .find("input, button")
                     .prop("disabled", true);
                 } else {
                   $mainControls
                     .removeClass("opacity-50 pointer-events-none")
-                    .find("input:not(.pin-name)")
+                    .find("input:not(.pin-name), button")
                     .prop("disabled", false);
                 }
               }
@@ -572,7 +588,7 @@
               // If scheduler is off, ensure controls are enabled.
               $mainControls
                 .removeClass("opacity-50 pointer-events-none")
-                .find("input:not(.pin-name)")
+                .find("input:not(.pin-name), button")
                 .prop("disabled", false);
             }
           });
