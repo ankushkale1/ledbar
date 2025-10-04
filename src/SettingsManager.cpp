@@ -16,8 +16,16 @@ void SettingsManager::begin()
             // Populate with some default channels if none exist to prevent empty settings
             if (settings.channels.empty())
             {
-                settings.channels.push_back({"D1", false, 80});
-                settings.channels.push_back({"D2", false, 80});
+                ChannelSetting channel1;
+                channel1.pin = "D1";
+                channel1.state = false;
+                channel1.brightness = 80;
+                settings.channels.push_back(channel1);
+                ChannelSetting channel2;
+                channel2.pin = "D2";
+                channel2.state = false;
+                channel2.brightness = 80;
+                settings.channels.push_back(channel2);
             }
             saveSettings();
         }

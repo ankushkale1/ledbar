@@ -103,6 +103,10 @@
       }
       .card {
         animation: fadeIn 0.3s ease-out;
+        /* Subtle 3D effect with shadow and gradient */
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(to bottom, #344155, #2a3444);
+        transition: transform 0.2s ease-in-out;
       }
       .edit-icon {
         transition: all 0.2s ease;
@@ -388,26 +392,6 @@
         let scheduleCheckInterval = null;
         let nextScheduleCheck = null;
 
-        async function updateChannelName(index, newName) {
-          try {
-            await $.ajax({
-              url: "/channel/name",
-              method: "POST",
-              contentType: "application/json",
-              data: JSON.stringify({
-                channelIndex: index,
-                channelName: newName,
-              }),
-              success: () =>
-                showNotification("Channel name updated successfully!"),
-              error: () =>
-                showNotification("Failed to update channel name.", "error"),
-            });
-          } catch (error) {
-            showNotification("Error: Could not reach server.", "error");
-          }
-        }
-
         function areStatesEqual(state1, state2) {
           if (!state1 || !state2) return false;
           if (state1.gmt_offset !== state2.gmt_offset) return false;
@@ -426,6 +410,25 @@
             );
           });
         }
+
+        // async function updateChannelName(channelIndex, newName) {
+        //   const settings = {
+        //     channels: [],
+        //     gmt_offset: parseInt($timezoneSelect.val()),
+        //   };
+        //   $(".card").each(function (i, card) {
+        //     const $card = $(card);
+        //     settings.channels.push({
+        //       pin: $card.find(".pin-name").val(),
+        //       channelName: $card.data("channelName"), // Use data attribute
+        //       state: $card.find(".led-toggle").prop("checked"),
+        //       brightness: parseInt($card.find(".brightness-slider").val()),
+        //     });
+        //   });
+
+        //   settings.channels[channelIndex].channelName = newName;
+        //   await sendSettings(settings);
+        // }
 
         function updatePollingState() {
           const shouldPoll = !areStatesEqual(lastSentState, lastConfirmedState);
@@ -682,6 +685,7 @@
                 const $card = $(card);
                 return {
                   pin: $card.find(".pin-name").val(),
+                  channelName: $card.find(".channel-name-display").text(),
                   state: $card.find(".led-toggle").prop("checked"),
                   schedulerEnabled: $card
                     .find(".schedule-toggle")
@@ -760,7 +764,7 @@
           ) {
             $nameDisplay.text(newName.trim());
             $card.data("channelName", newName.trim());
-            updateChannelName(channelIndex, newName.trim());
+            buildPayload();
           }
         });
 
