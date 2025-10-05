@@ -43,7 +43,7 @@ void setup()
     Serial.println("\n[Main] Booting device...");
 
     // 1. Initialize filesystem and load settings
-    settingsManager.begin();
+    // settingsManager.begin();
     DeviceSettings &settings = settingsManager.getSettings();
 
     // 2. Initialize LED controller and apply loaded settings

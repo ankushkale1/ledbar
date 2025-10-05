@@ -629,7 +629,10 @@
               method: "POST",
               contentType: "application/json",
               data: JSON.stringify(settings),
-              success: () => showNotification("Settings Applied Successfully!"),
+              success: () => {
+                showNotification("Settings Applied Successfully!");
+                //location.reload();
+              },
               error: () =>
                 showNotification("Failed to apply settings.", "error"),
             });

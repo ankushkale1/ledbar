@@ -4,6 +4,7 @@
 SettingsManager::SettingsManager()
 {
     // Initialization is handled in begin() to ensure filesystem is ready.
+    begin();
 }
 
 void SettingsManager::begin()
