@@ -1,5 +1,6 @@
 #include "WebServerController.h"
 #include "LittleFS.h"
+#include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
 
 WebServerController::WebServerController(int port, SettingsManager &settingsMgr, LedController &ledCtrl, Scheduler &scheduler, TimeManager &timeMgr)
@@ -68,6 +69,23 @@ void WebServerController::handleSettings()
     // Update scheduler settings from JSON
     settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Use default if missing
 
+    String newMDNSName = doc["mDNSName"].as<String>();
+
+    // Check if the new mDNS name is already in use
+    if (MDNS.queryService(newMDNSName, "tcp"))
+    {
+        Serial.println("[Web] mDNS name already in use.");
+        _server.send(400, "application/json", "{\"error\":\"mDNS name already in use\"}");
+        return;
+    }
+
+    if (settings.mDNSName != newMDNSName)
+    {
+        Serial.println("[Web] mDNS name changed. Restarting...");
+        settings.mDNSName = newMDNSName;
+        _settingsManager.saveSettings();
+        ESP.restart();
+    }
     // Update channel settings from JSON
     JsonArray channelsArray = doc["channels"].as<JsonArray>();
     settings.channels.clear(); // Clear old channels before adding new ones
@@ -90,7 +108,6 @@ void WebServerController::handleSettings()
     _timeManager.setTimezone(settings.gmtOffsetSeconds);
     _scheduler.updateSchedule(settings);
     _settingsManager.saveSettings();
-
     _server.send(200, "application/json", "{\"success\":true}");
 }
 
@@ -100,6 +117,7 @@ void WebServerController::handleStatus()
     DynamicJsonDocument doc(1024); // Adjust size as needed
 
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
+    doc["mDNSName"] = settings.mDNSName;
 
     JsonArray channels = doc.createNestedArray("channels");
     for (const auto &ch_setting : settings.channels)

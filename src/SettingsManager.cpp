@@ -60,6 +60,7 @@ bool SettingsManager::loadSettings()
 
     // Load scheduler settings, providing defaults if keys are missing
     settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Default to IST if not present
+    settings.mDNSName = doc["mDNSName"].as<String>() == "" ? "ledbar" : doc["mDNSName"].as<String>();
 
     // Load channel settings
     settings.channels.clear(); // Clear existing channels before loading new ones
@@ -95,6 +96,7 @@ bool SettingsManager::saveSettings()
 
     // Save scheduler settings
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
+    doc["mDNSName"] = settings.mDNSName;
 
     // Save channel settings
     JsonArray channels = doc.createNestedArray("channels");

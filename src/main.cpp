@@ -15,18 +15,16 @@ const char *WIFI_SSID = "JioFiber-4G";
 const char *WIFI_PASSWORD = "Ak@00789101112";
 
 // Pin Assignments
-const int STATUS_LED_PIN = D4;        // On-board LED used for status (GPIO2)
-const char *MDNS_HOSTNAME = "ledbar"; // mDNS hostname for the device
-
+const int STATUS_LED_PIN = D4; // On-board LED used for status (GPIO2)
 const int INVERTING_LOGIC = true;
 const int MOTION_SENSOR_PIN = D0; // Example pin, change as needed.
-
 const int MOTION_ON_HOUR = 21;
 const int MOTION_OFF_HOUR = 6;
 
 // --- Global Object Instantiation ---
 SettingsManager settingsManager;
-LedController ledController(INVERTING_LOGIC); // true for inverted logic (active-low LEDs)
+const char *MDNS_HOSTNAME = settingsManager.getSettings().mDNSName.c_str(); // mDNS hostname for the device
+LedController ledController(INVERTING_LOGIC);                               // true for inverted logic (active-low LEDs)
 WiFiConnector wifiConnector(WIFI_SSID, WIFI_PASSWORD, STATUS_LED_PIN);
 TimeManager timeManager;
 Scheduler scheduler;

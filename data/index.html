@@ -147,6 +147,14 @@
           >
             Configuration
           </h2>
+          <div class="flex justify-between items-center mb-2">
+            <label for="mdns-name" class="text-slate-300">mDNS Name</label>
+            <input
+              type="text"
+              id="mdns-name"
+              class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-20 text-center"
+            />
+          </div>
           <div class="flex justify-between items-center">
             <label for="pin-count" class="text-slate-300">PWM Pin Count</label>
             <input
@@ -383,6 +391,7 @@
         const $pinCountInput = $("#pin-count");
         const $pwmControlsContainer = $("#pwm-controls-container");
         const $timezoneSelect = $("#timezone-select");
+        const $mDnsname = $("#mdns-name");
         const $channelTemplate = $("#channel-template");
         let isUpdating = false;
         let lastSentState = null;
@@ -645,6 +654,9 @@
             if (data.gmt_offset !== undefined) {
               $timezoneSelect.val(data.gmt_offset);
             }
+            if (data.mDNSName !== undefined) {
+              $mDnsname.val(data.mDNSName);
+            }
             data.channels?.forEach((channel, i) => {
               const $card = $(".card").eq(i);
               if ($card.length) {
@@ -700,6 +712,7 @@
               })
               .get(),
             gmt_offset: parseInt($timezoneSelect.val()),
+            mDNSName: $mDnsname.val().trim(),
           };
           debouncedSendSettings(payload);
         }
@@ -710,6 +723,7 @@
         });
 
         $timezoneSelect.on("change", buildPayload);
+        $mDnsname.on("change", buildPayload);
 
         $pwmControlsContainer.on("input", "input", (e) => {
           if (

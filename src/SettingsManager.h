@@ -24,6 +24,7 @@ struct DeviceSettings
 {
   std::vector<ChannelSetting> channels;
   long gmtOffsetSeconds = 19800; // Default to IST (+5:30)
+  String mDNSName = "ledbar";
   // Remove old single-channel properties like ledState, brightness
 };
 
