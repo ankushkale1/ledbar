@@ -14,6 +14,8 @@ void WebServerController::begin()
                { this->handleSettings(); });
     _server.on("/status", HTTP_GET, [this]()
                { this->handleStatus(); });
+    _server.on("/version", HTTP_GET, [this]()
+               { this->handleVersion(); });
     _server.onNotFound([this]()
                        { this->handleNotFound(); });
 
@@ -133,6 +135,15 @@ void WebServerController::handleStatus()
         channel["scheduler_brightness"] = ch_setting.sheduledBrightness;
     }
 
+    String json;
+    serializeJson(doc, json);
+    _server.send(200, "application/json", json);
+}
+
+void WebServerController::handleVersion()
+{
+    DynamicJsonDocument doc(64);
+    doc["version"] = APP_VERSION;
     String json;
     serializeJson(doc, json);
     _server.send(200, "application/json", json);

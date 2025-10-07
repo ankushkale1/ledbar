@@ -25,6 +25,7 @@ private:
     void handleRoot();
     void handleSettings();
     void handleStatus();
+    void handleVersion();
     void handleNotFound();
 };
 

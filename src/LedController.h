@@ -4,7 +4,8 @@
 #include <Arduino.h>
 #include "SettingsManager.h" // For DeviceSettings
 
-class LedController {
+class LedController
+{
 public:
     /**
      * @brief Constructor for the LedController.
@@ -23,14 +24,14 @@ public:
      * @brief Updates all LED channels based on the provided settings.
      * @param settings The device settings containing all channel configurations.
      */
-    void update(const DeviceSettings& settings);
+    void update(const DeviceSettings &settings);
 
 private:
     bool _invertingLogic;
     // The ESP8266 has a 10-bit PWM resolution, so the range is 0-255.
-    const int PWM_RANGE = 255;
-    //const int PWM_FREQ = 128; // Set PWM frequency to 128Hz
-    int pinNameToNumber(const String& pinName);
+    const int PWM_RANGE = 100;
+    const int PWM_FREQ = 256; // Set PWM frequency to 256Hz
+    int pinNameToNumber(const String &pinName);
 };
 
 #endif // LED_CONTROLLER_H
