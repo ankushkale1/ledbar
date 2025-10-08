@@ -251,9 +251,26 @@
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"
       ></div>
 
-      <details id="serial-monitor-details" class="bg-slate-800 rounded-lg p-4 shadow-lg border border-slate-700 mt-6">
-        <summary class="cursor-pointer text-lg font-semibold text-slate-100">Serial Monitor</summary>
-        <div id="log-container" class="mt-4 p-2 bg-slate-900 rounded h-64 overflow-y-scroll font-mono text-sm text-slate-300"></div>
+      <details
+        id="serial-monitor-details"
+        class="bg-slate-800 rounded-lg p-4 shadow-lg border border-slate-700 mt-6"
+      >
+        <summary class="cursor-pointer text-lg font-semibold text-slate-100">
+          Serial Monitor
+        </summary>
+        <div class="flex justify-between items-center mt-2">
+          <button
+            id="clear-log-button"
+            class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-1 px-2 rounded transition-colors border border-slate-600"
+          >
+            Clear Log
+          </button>
+        </div>
+
+        <div
+          id="log-container"
+          class="mt-2 p-2 bg-slate-900 rounded h-64 overflow-y-scroll font-mono text-sm text-slate-300"
+        ></div>
       </details>
     </div>
 
@@ -786,77 +803,89 @@
         }
 
         function pruneLogs() {
-            const logContainer = document.getElementById('log-container');
-            const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
-            const logEntries = logContainer.querySelectorAll('div[data-timestamp]');
-            logEntries.forEach(entry => {
-                if (parseInt(entry.dataset.timestamp) < fiveMinutesAgo) {
-                    entry.remove();
-                }
-            });
+          const logContainer = document.getElementById("log-container");
+          const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+          const logEntries = logContainer.querySelectorAll(
+            "div[data-timestamp]"
+          );
+          logEntries.forEach((entry) => {
+            if (parseInt(entry.dataset.timestamp) < fiveMinutesAgo) {
+              entry.remove();
+            }
+          });
         }
 
         function connectWebSocket() {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                console.log('WebSocket is already connected.');
-                return;
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            console.log("WebSocket is already connected.");
+            return;
+          }
+          const logContainer = document.getElementById("log-container");
+          socket = new WebSocket(`ws://${window.location.hostname}:81/`);
+
+          socket.onopen = function () {
+            console.log("WebSocket connection established");
+            logContainer.innerHTML +=
+              '<div class="text-green-400">[WS] Connection established</div>';
+            if (!logPruneInterval) {
+              logPruneInterval = setInterval(pruneLogs, 10000); // Check every 10 seconds
             }
-            const logContainer = document.getElementById('log-container');
-            socket = new WebSocket(`ws://${window.location.hostname}:81/`);
+          };
 
-            socket.onopen = function() {
-                console.log('WebSocket connection established');
-                logContainer.innerHTML += '<div class="text-green-400">[WS] Connection established</div>';
-                if (!logPruneInterval) {
-                    logPruneInterval = setInterval(pruneLogs, 10000); // Check every 10 seconds
-                }
-            };
+          socket.onmessage = function (event) {
+            const isScrolledToBottom =
+              logContainer.scrollHeight - logContainer.clientHeight <=
+              logContainer.scrollTop + 1;
+            const logEntry = document.createElement("div");
+            logEntry.dataset.timestamp = Date.now();
+            logEntry.innerHTML = event.data.replace(/\n/g, "<br>");
+            logContainer.appendChild(logEntry);
+            if (isScrolledToBottom) {
+              logContainer.scrollTop = logContainer.scrollHeight;
+            }
+          };
 
-            socket.onmessage = function(event) {
-                const isScrolledToBottom = logContainer.scrollHeight - logContainer.clientHeight <= logContainer.scrollTop + 1;
-                const logEntry = document.createElement('div');
-                logEntry.dataset.timestamp = Date.now();
-                logEntry.innerHTML = event.data.replace(/\n/g, '<br>');
-                logContainer.appendChild(logEntry);
-                if (isScrolledToBottom) {
-                    logContainer.scrollTop = logContainer.scrollHeight;
-                }
-            };
+          socket.onclose = function () {
+            console.log("WebSocket connection closed.");
+            logContainer.innerHTML +=
+              '<div class="text-red-400">[WS] Connection closed.</div>';
+            if (logPruneInterval) {
+              clearInterval(logPruneInterval);
+              logPruneInterval = null;
+            }
+          };
 
-            socket.onclose = function() {
-                console.log('WebSocket connection closed.');
-                logContainer.innerHTML += '<div class="text-red-400">[WS] Connection closed.</div>';
-                if (logPruneInterval) {
-                    clearInterval(logPruneInterval);
-                    logPruneInterval = null;
-                }
-            };
-
-            socket.onerror = function(error) {
-                console.error('WebSocket Error:', error);
-                logContainer.innerHTML += `<div class="text-red-500">[WS] Error: ${error.message}</div>`;
-            };
+          socket.onerror = function (error) {
+            console.error("WebSocket Error:", error);
+            logContainer.innerHTML += `<div class="text-red-500">[WS] Error: ${error.message}</div>`;
+          };
         }
 
         function disconnectWebSocket() {
-            if (socket) {
-                socket.onclose = null; // prevent reconnection
-                socket.close();
-                socket = null;
-                $('#log-container').append('<div class="text-yellow-400">[WS] Connection closed by user.</div>');
-                if (logPruneInterval) {
-                    clearInterval(logPruneInterval);
-                    logPruneInterval = null;
-                }
+          if (socket) {
+            socket.onclose = null; // prevent reconnection
+            socket.close();
+            socket = null;
+            $("#log-container").append(
+              '<div class="text-yellow-400">[WS] Connection closed by user.</div>'
+            );
+            if (logPruneInterval) {
+              clearInterval(logPruneInterval);
+              logPruneInterval = null;
             }
+          }
         }
 
-        $('#serial-monitor-details').on('toggle', function() {
-            if ($(this).prop('open')) {
-                connectWebSocket();
-            } else {
-                disconnectWebSocket();
-            }
+        $("#clear-log-button").on("click", function () {
+          $("#log-container").empty();
+        });
+
+        $("#serial-monitor-details").on("toggle", function () {
+          if ($(this).prop("open")) {
+            connectWebSocket();
+          } else {
+            disconnectWebSocket();
+          }
         });
 
         renderChannels(parseInt($pinCountInput.val()));
