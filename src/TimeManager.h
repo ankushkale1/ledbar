@@ -6,7 +6,8 @@
 
 #define NTP_UPDATE_INTERVAL 3600000 // 1 hour in ms
 
-class TimeManager {
+class TimeManager
+{
 public:
     TimeManager();
     void begin();
@@ -19,6 +20,7 @@ public:
 private:
     WiFiUDP _ntpUDP;
     NTPClient _timeClient;
+    long _current_gmtOffsetSeconds;
 };
 
 #endif

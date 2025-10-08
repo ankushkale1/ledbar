@@ -22,9 +22,14 @@ void TimeManager::update()
 
 void TimeManager::setTimezone(long gmtOffsetSeconds)
 {
-    _timeClient.setTimeOffset(gmtOffsetSeconds);
-    // Force an update to apply the new timezone immediately
-    _timeClient.forceUpdate();
+    if (_current_gmtOffsetSeconds != gmtOffsetSeconds)
+    {
+        Log.infoln("[TimeMgr] Timezone offset changed to %ld seconds. Updating NTP client.", gmtOffsetSeconds);
+        _current_gmtOffsetSeconds = gmtOffsetSeconds;
+        _timeClient.setTimeOffset(gmtOffsetSeconds);
+        // Force an update to apply the new timezone immediately
+        _timeClient.forceUpdate();
+    }
 }
 
 String TimeManager::getFormattedTime()

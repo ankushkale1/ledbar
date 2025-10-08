@@ -75,16 +75,16 @@ void WebServerController::handleSettings()
 
     String newMDNSName = doc["mDNSName"].as<String>();
 
-    // Check if the new mDNS name is already in use
-    if (MDNS.queryService(newMDNSName, "tcp") > 0)
-    {
-        Log.infoln("[Web] mDNS name already in use.");
-        _server.send(400, "application/json", "{\"error\":\"mDNS name already in use\"}");
-        return;
-    }
-
     if (settings.mDNSName != newMDNSName)
     {
+        // Check if the new mDNS name is already in use
+        if (MDNS.queryService(newMDNSName, "tcp") > 0)
+        {
+            Log.infoln("[Web] mDNS name already in use.");
+            _server.send(400, "application/json", "{\"error\":\"mDNS name already in use\"}");
+            return;
+        }
+
         Log.infoln("[Web] mDNS name changed. Restarting...");
         settings.mDNSName = newMDNSName;
         _settingsManager.saveSettings();
