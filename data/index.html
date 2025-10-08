@@ -251,7 +251,7 @@
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"
       ></div>
 
-      <details class="bg-slate-800 rounded-lg p-4 shadow-lg border border-slate-700 mt-6">
+      <details id="serial-monitor-details" class="bg-slate-800 rounded-lg p-4 shadow-lg border border-slate-700 mt-6">
         <summary class="cursor-pointer text-lg font-semibold text-slate-100">Serial Monitor</summary>
         <div id="log-container" class="mt-4 p-2 bg-slate-900 rounded h-64 overflow-y-scroll font-mono text-sm text-slate-300"></div>
       </details>
@@ -406,6 +406,8 @@
         let needsPolling = true;
         let scheduleCheckInterval = null;
         let nextScheduleCheck = null;
+        let socket = null;
+        let logPruneInterval = null;
 
         function areStatesEqual(state1, state2) {
           if (!state1 || !state2) return false;
@@ -425,25 +427,6 @@
             );
           });
         }
-
-        // async function updateChannelName(channelIndex, newName) {
-        //   const settings = {
-        //     channels: [],
-        //     gmt_offset: parseInt($timezoneSelect.val()),
-        //   };
-        //   $(".card").each(function (i, card) {
-        //     const $card = $(card);
-        //     settings.channels.push({
-        //       pin: $card.find(".pin-name").val(),
-        //       channelName: $card.data("channelName"), // Use data attribute
-        //       state: $card.find(".led-toggle").prop("checked"),
-        //       brightness: parseInt($card.find(".brightness-slider").val()),
-        //     });
-        //   });
-
-        //   settings.channels[channelIndex].channelName = newName;
-        //   await sendSettings(settings);
-        // }
 
         function updatePollingState() {
           const shouldPoll = !areStatesEqual(lastSentState, lastConfirmedState);
@@ -802,43 +785,87 @@
           }
         }
 
+        function pruneLogs() {
+            const logContainer = document.getElementById('log-container');
+            const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+            const logEntries = logContainer.querySelectorAll('div[data-timestamp]');
+            logEntries.forEach(entry => {
+                if (parseInt(entry.dataset.timestamp) < fiveMinutesAgo) {
+                    entry.remove();
+                }
+            });
+        }
+
+        function connectWebSocket() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                console.log('WebSocket is already connected.');
+                return;
+            }
+            const logContainer = document.getElementById('log-container');
+            socket = new WebSocket(`ws://${window.location.hostname}:81/`);
+
+            socket.onopen = function() {
+                console.log('WebSocket connection established');
+                logContainer.innerHTML += '<div class="text-green-400">[WS] Connection established</div>';
+                if (!logPruneInterval) {
+                    logPruneInterval = setInterval(pruneLogs, 10000); // Check every 10 seconds
+                }
+            };
+
+            socket.onmessage = function(event) {
+                const isScrolledToBottom = logContainer.scrollHeight - logContainer.clientHeight <= logContainer.scrollTop + 1;
+                const logEntry = document.createElement('div');
+                logEntry.dataset.timestamp = Date.now();
+                logEntry.innerHTML = event.data.replace(/\n/g, '<br>');
+                logContainer.appendChild(logEntry);
+                if (isScrolledToBottom) {
+                    logContainer.scrollTop = logContainer.scrollHeight;
+                }
+            };
+
+            socket.onclose = function() {
+                console.log('WebSocket connection closed.');
+                logContainer.innerHTML += '<div class="text-red-400">[WS] Connection closed.</div>';
+                if (logPruneInterval) {
+                    clearInterval(logPruneInterval);
+                    logPruneInterval = null;
+                }
+            };
+
+            socket.onerror = function(error) {
+                console.error('WebSocket Error:', error);
+                logContainer.innerHTML += `<div class="text-red-500">[WS] Error: ${error.message}</div>`;
+            };
+        }
+
+        function disconnectWebSocket() {
+            if (socket) {
+                socket.onclose = null; // prevent reconnection
+                socket.close();
+                socket = null;
+                $('#log-container').append('<div class="text-yellow-400">[WS] Connection closed by user.</div>');
+                if (logPruneInterval) {
+                    clearInterval(logPruneInterval);
+                    logPruneInterval = null;
+                }
+            }
+        }
+
+        $('#serial-monitor-details').on('toggle', function() {
+            if ($(this).prop('open')) {
+                connectWebSocket();
+            } else {
+                disconnectWebSocket();
+            }
+        });
+
         renderChannels(parseInt($pinCountInput.val()));
         updateStatus();
         updatePollingState();
         checkSchedules();
         updateScheduleChecking();
         updateVersion();
-        connectWebSocket();
       });
-
-      function connectWebSocket() {
-        const logContainer = document.getElementById('log-container');
-        const socket = new WebSocket(`ws://${window.location.hostname}:81/`);
-
-        socket.onopen = function() {
-          console.log('WebSocket connection established');
-          logContainer.innerHTML += '<div class="text-green-400">[WS] Connection established</div>';
-        };
-
-        socket.onmessage = function(event) {
-          const isScrolledToBottom = logContainer.scrollHeight - logContainer.clientHeight <= logContainer.scrollTop + 1;
-          logContainer.innerHTML += event.data.replace(/\n/g, '<br>');
-          if (isScrolledToBottom) {
-            logContainer.scrollTop = logContainer.scrollHeight;
-          }
-        };
-
-        socket.onclose = function() {
-          console.log('WebSocket connection closed. Reconnecting in 2s...');
-          logContainer.innerHTML += '<div class="text-red-400">[WS] Connection closed. Reconnecting...</div>';
-          setTimeout(connectWebSocket, 2000);
-        };
-
-        socket.onerror = function(error) {
-          console.error('WebSocket Error:', error);
-          logContainer.innerHTML += `<div class="text-red-500">[WS] Error: ${error.message}</div>`;
-        };
-      }
     </script>
   </body>
 </html>

@@ -2,7 +2,7 @@
 #include <ArduinoLog.h>
 
 WebsocketLogger::WebsocketLogger(WebSocketsServer &server)
-    : _webSocket(server) {}
+    : _webSocket(server), _bufferIndex(0) {}
 
 void WebsocketLogger::begin()
 {
@@ -17,14 +17,32 @@ void WebsocketLogger::loop()
 
 size_t WebsocketLogger::write(uint8_t character)
 {
-    _webSocket.broadcastTXT(&character, 1);
+    if (_bufferIndex < LOG_BUFFER_SIZE - 1) {
+        _buffer[_bufferIndex++] = character;
+        if (character == '\n') {
+            flush();
+        }
+    } else {
+        flush();
+        _buffer[_bufferIndex++] = character;
+    }
     return Serial.write(character);
 }
 
 size_t WebsocketLogger::write(const uint8_t *buffer, size_t size)
 {
-    _webSocket.broadcastTXT(buffer, size);
-    return Serial.write(buffer, size);
+    for (size_t i = 0; i < size; i++) {
+        write(buffer[i]);
+    }
+    return size;
+}
+
+void WebsocketLogger::flush() {
+    if (_bufferIndex > 0) {
+        _buffer[_bufferIndex] = '\0'; // Null-terminate the string
+        _webSocket.broadcastTXT((uint8_t*)_buffer, _bufferIndex);
+        _bufferIndex = 0;
+    }
 }
 
 void WebsocketLogger::webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)

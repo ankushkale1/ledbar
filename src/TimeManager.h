@@ -4,6 +4,8 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
+#define NTP_UPDATE_INTERVAL 3600000 // 1 hour in ms
+
 class TimeManager {
 public:
     TimeManager();
@@ -17,8 +19,6 @@ public:
 private:
     WiFiUDP _ntpUDP;
     NTPClient _timeClient;
-    unsigned long _lastNtpUpdateTime;
-    const long NTP_UPDATE_INTERVAL = 3600000; // 1 hour in ms
 };
 
 #endif

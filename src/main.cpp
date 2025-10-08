@@ -90,6 +90,8 @@ void setup()
 
 void loop()
 {
+    // unsigned long loopStartTime = millis();
+
     // Handle OTA updates
     ArduinoOTA.handle();
 
@@ -191,4 +193,6 @@ void loop()
             }
         }
     }
+
+    // Log.verboseln("[Main] Loop duration: %lu ms", millis() - loopStartTime);
 }

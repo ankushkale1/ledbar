@@ -2,9 +2,8 @@
 #include <ArduinoLog.h>
 
 // Initialize with a default offset of 0. It will be updated from settings.
-TimeManager::TimeManager() : _timeClient(_ntpUDP, "pool.ntp.org", 0, 60000)
+TimeManager::TimeManager() : _timeClient(_ntpUDP, "pool.ntp.org", 0, NTP_UPDATE_INTERVAL)
 {
-    _lastNtpUpdateTime = 0;
 }
 
 void TimeManager::begin()
@@ -15,18 +14,9 @@ void TimeManager::begin()
 
 void TimeManager::update()
 {
-    // Only update from NTP server periodically to reduce network traffic
-    if (millis() - _lastNtpUpdateTime > NTP_UPDATE_INTERVAL || _lastNtpUpdateTime == 0)
+    if (_timeClient.update())
     {
-        if (_timeClient.forceUpdate())
-        {
-            _lastNtpUpdateTime = millis();
-            Log.infoln("[TimeMgr] NTP time updated: %s", getFormattedTime().c_str());
-        }
-        else
-        {
-            Log.infoln("[TimeMgr] Failed to update NTP time.");
-        }
+        Log.infoln("[TimeMgr] NTP time updated: %s", getFormattedTime().c_str());
     }
 }
 
@@ -34,10 +24,7 @@ void TimeManager::setTimezone(long gmtOffsetSeconds)
 {
     _timeClient.setTimeOffset(gmtOffsetSeconds);
     // Force an update to apply the new timezone immediately
-    if (_timeClient.forceUpdate())
-    {
-        _lastNtpUpdateTime = millis();
-    }
+    _timeClient.forceUpdate();
 }
 
 String TimeManager::getFormattedTime()
