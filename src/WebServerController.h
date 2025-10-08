@@ -2,6 +2,7 @@
 #define WEBSERVER_CONTROLLER_H
 
 #include <ESP8266WebServer.h>
+#include <WebSocketsServer.h>
 #include "SettingsManager.h"
 #include "LedController.h"
 #include "Scheduler.h"
@@ -9,7 +10,7 @@
 
 class WebServerController {
 public:
-    WebServerController(int port, SettingsManager& settingsMgr, LedController& ledCtrl, Scheduler& scheduler, TimeManager& timeMgr);
+    WebServerController(int port, WebSocketsServer& ws, SettingsManager& settingsMgr, LedController& ledCtrl, Scheduler& scheduler, TimeManager& timeMgr);
     void begin();
     void handleClient();
     void serveFile(const String& filePath);
@@ -17,6 +18,7 @@ public:
 
 private:
     ESP8266WebServer _server;
+    WebSocketsServer& _ws;
     SettingsManager& _settingsManager;
     LedController& _ledController;
     Scheduler& _scheduler;

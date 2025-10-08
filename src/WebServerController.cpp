@@ -2,9 +2,10 @@
 #include "LittleFS.h"
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
+#include <ArduinoLog.h>
 
-WebServerController::WebServerController(int port, SettingsManager &settingsMgr, LedController &ledCtrl, Scheduler &scheduler, TimeManager &timeMgr)
-    : _server(port), _settingsManager(settingsMgr), _ledController(ledCtrl), _scheduler(scheduler), _timeManager(timeMgr) {}
+WebServerController::WebServerController(int port, WebSocketsServer &ws, SettingsManager &settingsMgr, LedController &ledCtrl, Scheduler &scheduler, TimeManager &timeMgr)
+    : _server(port), _ws(ws), _settingsManager(settingsMgr), _ledController(ledCtrl), _scheduler(scheduler), _timeManager(timeMgr) {}
 
 void WebServerController::begin()
 {
@@ -20,7 +21,8 @@ void WebServerController::begin()
                        { this->handleNotFound(); });
 
     _server.begin();
-    Serial.println("[Web] HTTP server started.");
+    _ws.begin();
+    Log.infoln("[Web] HTTP and WebSocket server started.");
 }
 
 void WebServerController::handleClient()
@@ -61,7 +63,7 @@ void WebServerController::handleSettings()
     if (error)
     {
         Serial.print(F("[Web] deserializeJson() failed: "));
-        Serial.println(error.c_str());
+        Log.infoln(error.c_str());
         _server.send(400, "application/json", "{\"error\":\"Invalid JSON\"}");
         return;
     }
@@ -74,16 +76,16 @@ void WebServerController::handleSettings()
     String newMDNSName = doc["mDNSName"].as<String>();
 
     // Check if the new mDNS name is already in use
-    if (MDNS.queryService(newMDNSName, "tcp"))
+    if (MDNS.queryService(newMDNSName, "tcp") > 0)
     {
-        Serial.println("[Web] mDNS name already in use.");
+        Log.infoln("[Web] mDNS name already in use.");
         _server.send(400, "application/json", "{\"error\":\"mDNS name already in use\"}");
         return;
     }
 
     if (settings.mDNSName != newMDNSName)
     {
-        Serial.println("[Web] mDNS name changed. Restarting...");
+        Log.infoln("[Web] mDNS name changed. Restarting...");
         settings.mDNSName = newMDNSName;
         _settingsManager.saveSettings();
         ESP.restart();

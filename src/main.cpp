@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoLog.h>
 #include "SettingsManager.h"
 #include "WifiConnector.h"
 #include "LedController.h"
@@ -8,6 +9,7 @@
 #include "WebServerController.h"
 #include "MotionSensor.h"
 #include "OTAUpdater.h"
+#include "WebsocketLogger.h"
 
 // --- Project Configuration ---
 // WiFi Credentials
@@ -29,7 +31,9 @@ WiFiConnector wifiConnector(WIFI_SSID, WIFI_PASSWORD, STATUS_LED_PIN);
 TimeManager timeManager;
 Scheduler scheduler;
 MDNSManager mdnsManager(MDNS_HOSTNAME);
-WebServerController webServerController(80, settingsManager, ledController, scheduler, timeManager);
+WebSocketsServer webSocket(81);
+WebsocketLogger websocketLogger(webSocket);
+WebServerController webServerController(80, webSocket, settingsManager, ledController, scheduler, timeManager);
 MotionSensor motionSensor(MOTION_SENSOR_PIN);
 OTAUpdater otaUpdater(MDNS_HOSTNAME);
 
@@ -40,7 +44,8 @@ const long SCHEDULER_CHECK_INTERVAL = 1000; // Check every second
 void setup()
 {
     Serial.begin(115200);
-    Serial.println("\n[Main] Booting device...");
+    Log.begin(LOG_LEVEL_VERBOSE, &websocketLogger);
+    Log.infoln("\n[Main] Booting device...");
 
     // 1. Initialize filesystem and load settings
     // settingsManager.begin();
@@ -75,11 +80,12 @@ void setup()
 
     // 7. Initialize and start the Web Server
     webServerController.begin();
+    websocketLogger.begin();
 
     otaUpdater.begin();
-    Serial.println("[OTA] Ready for updates");
+    Log.infoln("[OTA] Ready for updates");
 
-    Serial.println("[Main] Setup complete. System running.");
+    Log.infoln("[Main] Setup complete. System running.");
 }
 
 void loop()
@@ -89,6 +95,7 @@ void loop()
 
     // Must be called every loop to service web requests
     webServerController.handleClient();
+    websocketLogger.loop();
 
     // Keep mDNS service active
     mdnsManager.loop();
@@ -106,7 +113,7 @@ void loop()
     int currentHour = timeManager.getHours();
     if (motionSensor.motionDetected() && (currentHour >= MOTION_ON_HOUR || currentHour < MOTION_OFF_HOUR))
     {
-        Serial.println("[Main] Motion detected at night. Turning on lights.");
+        Log.infoln("[Main] Motion detected at night. Turning on lights.");
         DeviceSettings &settings = settingsManager.getSettings();
 
         bool settingsChanged = false;
@@ -126,7 +133,7 @@ void loop()
         // Keep the lights on for 5 minutes
         delay(300000); // 5 minutes delay
 
-        Serial.println("[Main] Motion timeout. Turning off lights.");
+        Log.infoln("[Main] Motion timeout. Turning off lights.");
         settingsChanged = false;
         for (auto &channel : settings.channels)
         {
@@ -159,10 +166,10 @@ void loop()
 
                 for (const auto &action : actions)
                 {
-                    Serial.printf("[Main] Scheduler Action: Channel: %s, State: %s, Brightness: %d\n",
-                                  action.channel.c_str(),
-                                  action.stateOnOFF ? "ON" : "OFF",
-                                  action.brightness);
+                    Log.infoln("[Main] Scheduler Action: Channel: %s, State: %s, Brightness: %d\n",
+                               action.channel.c_str(),
+                               action.stateOnOFF ? "ON" : "OFF",
+                               action.brightness);
                     // Update the LED controller based on the action
 
                     for (auto &channel : settings.channels)

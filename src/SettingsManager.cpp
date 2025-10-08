@@ -1,5 +1,6 @@
 #include "SettingsManager.h"
 #include <ArduinoJson.h>
+#include <ArduinoLog.h>
 
 SettingsManager::SettingsManager()
 {
@@ -13,7 +14,7 @@ void SettingsManager::begin()
     {
         if (!loadSettings())
         {
-            Serial.println("[Settings] No settings file found or file corrupted, creating default settings.");
+            Log.infoln("[Settings] No settings file found or file corrupted, creating default settings.");
             // Populate with some default channels if none exist to prevent empty settings
             if (settings.channels.empty())
             {
@@ -33,7 +34,7 @@ void SettingsManager::begin()
     }
     else
     {
-        Serial.println("[Settings] CRITICAL: Filesystem could not be mounted.");
+        Log.infoln("[Settings] CRITICAL: Filesystem could not be mounted.");
     }
 }
 
@@ -42,7 +43,7 @@ bool SettingsManager::loadSettings()
     File configFile = LittleFS.open("/settings.json", "r");
     if (!configFile)
     {
-        Serial.println("[Settings] Failed to open config file for reading.");
+        Log.infoln("[Settings] Failed to open config file for reading.");
         return false;
     }
 
@@ -55,7 +56,7 @@ bool SettingsManager::loadSettings()
     if (error)
     {
         Serial.print(F("[Settings] deserializeJson() failed: "));
-        Serial.println(error.c_str());
+        Log.infoln(error.c_str());
         return false;
     }
 
@@ -80,7 +81,7 @@ bool SettingsManager::loadSettings()
         settings.channels.push_back(ch);
     }
 
-    Serial.println("[Settings] Settings loaded successfully.");
+    Log.infoln("[Settings] Settings loaded successfully.");
     return true;
 }
 
@@ -89,7 +90,7 @@ bool SettingsManager::saveSettings()
     File configFile = LittleFS.open("/settings.json", "w");
     if (!configFile)
     {
-        Serial.println("[Settings] Failed to open config file for writing.");
+        Log.infoln("[Settings] Failed to open config file for writing.");
         return false;
     }
 
@@ -116,13 +117,13 @@ bool SettingsManager::saveSettings()
 
     if (serializeJson(doc, configFile) == 0)
     {
-        Serial.println(F("[Settings] Failed to write to config file."));
+        Log.infoln(F("[Settings] Failed to write to config file."));
         configFile.close();
         return false;
     }
 
     configFile.close();
-    Serial.println("[Settings] Settings saved successfully.");
+    Log.infoln("[Settings] Settings saved successfully.");
     return true;
 }
 
@@ -135,15 +136,15 @@ bool SettingsManager::mountFS()
 {
     if (!LittleFS.begin())
     {
-        Serial.println("[Settings] Failed to mount file system. Formatting...");
+        Log.infoln("[Settings] Failed to mount file system. Formatting...");
         if (LittleFS.format())
         {
-            Serial.println("[Settings] Filesystem formatted successfully.");
+            Log.infoln("[Settings] Filesystem formatted successfully.");
             return LittleFS.begin();
         }
         else
         {
-            Serial.println("[Settings] Filesystem format failed.");
+            Log.infoln("[Settings] Filesystem format failed.");
             return false;
         }
     }

@@ -250,6 +250,11 @@
         id="pwm-controls-container"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"
       ></div>
+
+      <details class="bg-slate-800 rounded-lg p-4 shadow-lg border border-slate-700 mt-6">
+        <summary class="cursor-pointer text-lg font-semibold text-slate-100">Serial Monitor</summary>
+        <div id="log-container" class="mt-4 p-2 bg-slate-900 rounded h-64 overflow-y-scroll font-mono text-sm text-slate-300"></div>
+      </details>
     </div>
 
     <template id="channel-template">
@@ -641,7 +646,7 @@
             showNotification("Error: Could not reach server.", "error");
           }
         }
-        const debouncedSendSettings = debounce(sendSettings, 1000);
+        const debouncedSendSettings = debounce(sendSettings, 200);
 
         async function updateStatus() {
           if (isUpdating || !needsPolling) return;
@@ -803,7 +808,37 @@
         checkSchedules();
         updateScheduleChecking();
         updateVersion();
+        connectWebSocket();
       });
+
+      function connectWebSocket() {
+        const logContainer = document.getElementById('log-container');
+        const socket = new WebSocket(`ws://${window.location.hostname}:81/`);
+
+        socket.onopen = function() {
+          console.log('WebSocket connection established');
+          logContainer.innerHTML += '<div class="text-green-400">[WS] Connection established</div>';
+        };
+
+        socket.onmessage = function(event) {
+          const isScrolledToBottom = logContainer.scrollHeight - logContainer.clientHeight <= logContainer.scrollTop + 1;
+          logContainer.innerHTML += event.data.replace(/\n/g, '<br>');
+          if (isScrolledToBottom) {
+            logContainer.scrollTop = logContainer.scrollHeight;
+          }
+        };
+
+        socket.onclose = function() {
+          console.log('WebSocket connection closed. Reconnecting in 2s...');
+          logContainer.innerHTML += '<div class="text-red-400">[WS] Connection closed. Reconnecting...</div>';
+          setTimeout(connectWebSocket, 2000);
+        };
+
+        socket.onerror = function(error) {
+          console.error('WebSocket Error:', error);
+          logContainer.innerHTML += `<div class="text-red-500">[WS] Error: ${error.message}</div>`;
+        };
+      }
     </script>
   </body>
 </html>
