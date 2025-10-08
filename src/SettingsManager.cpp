@@ -1,6 +1,10 @@
 #include "SettingsManager.h"
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
+#include <EEPROM.h>
+
+#define MDNS_NAME_EEPROM_ADDR 0
+const String default_mDNSName = "ledbar";
 
 SettingsManager::SettingsManager()
 {
@@ -12,6 +16,11 @@ void SettingsManager::begin()
 {
     if (mountFS())
     {
+        EEPROM.begin(512);
+        if (!loadMDNSNameFromEEPROM())
+        {
+            saveMDNSNameToEEPROM(default_mDNSName); // Default mDNS name
+        }
         if (!loadSettings())
         {
             Log.infoln("[Settings] No settings file found or file corrupted, creating default settings.");
@@ -62,7 +71,7 @@ bool SettingsManager::loadSettings()
 
     // Load scheduler settings, providing defaults if keys are missing
     settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Default to IST if not present
-    settings.mDNSName = doc["mDNSName"].as<String>() == "" ? "ledbar" : doc["mDNSName"].as<String>();
+    loadMDNSNameFromEEPROM();
 
     // Load channel settings
     settings.channels.clear(); // Clear existing channels before loading new ones
@@ -98,7 +107,7 @@ bool SettingsManager::saveSettings()
 
     // Save scheduler settings
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
-    doc["mDNSName"] = settings.mDNSName;
+    saveMDNSNameToEEPROM(settings.mDNSName);
 
     // Save channel settings
     JsonArray channels = doc.createNestedArray("channels");
@@ -130,6 +139,49 @@ bool SettingsManager::saveSettings()
 DeviceSettings &SettingsManager::getSettings()
 {
     return settings;
+}
+
+bool SettingsManager::loadMDNSNameFromEEPROM()
+{
+    String storedMDNSName = "";
+    for (int i = 0; i < 32; i++)
+    { // Assuming a max length of 32 for mDNS name
+        char c = EEPROM.read(MDNS_NAME_EEPROM_ADDR + i);
+        if (c == '\0')
+            break;
+        storedMDNSName += c;
+    }
+
+    if (storedMDNSName.length() > 0)
+    {
+        settings.mDNSName = storedMDNSName;
+        Log.infoln("[Settings] mDNS name loaded from EEPROM: %s", settings.mDNSName.c_str());
+        return true;
+    }
+    else
+    {
+        settings.mDNSName = default_mDNSName; // Default if EEPROM is empty
+        Log.infoln("[Settings] No mDNS name found in EEPROM, using default: %s", settings.mDNSName.c_str());
+        return false;
+    }
+}
+
+void SettingsManager::saveMDNSNameToEEPROM(const String &mDNSName)
+{
+
+    for (int i = 0; i < 32; i++)
+    {
+        EEPROM.write(MDNS_NAME_EEPROM_ADDR + i, i < mDNSName.length() ? mDNSName[i] : '\0');
+    }
+    bool commit_result = EEPROM.commit();
+    if (commit_result)
+    {
+        Log.infoln("[Settings] mDNS name saved to EEPROM: %s", mDNSName.c_str());
+    }
+    else
+    {
+        Log.errorln("[Settings] EEPROM commit failed!");
+    }
 }
 
 bool SettingsManager::mountFS()

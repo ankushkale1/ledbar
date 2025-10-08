@@ -36,6 +36,8 @@ public:
   bool loadSettings();
   bool saveSettings();
   DeviceSettings &getSettings();
+  bool loadMDNSNameFromEEPROM();
+  void saveMDNSNameToEEPROM(const String &mDNSName);
 
 private:
   DeviceSettings settings;
