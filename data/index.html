@@ -244,6 +244,25 @@
             </select>
           </div>
         </div>
+
+        <div
+          class="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700"
+        >
+          <h2
+            class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
+          >
+            IR Remote
+          </h2>
+          <div class="flex justify-between items-center mb-2">
+            <label for="last-ir-code" class="text-slate-300">Last Received Code</label>
+            <input
+              type="text"
+              id="last-ir-code"
+              class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-40 text-center"
+              readonly
+            />
+          </div>
+        </div>
       </div>
 
       <div
@@ -344,6 +363,19 @@
                 class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 transition-all duration-400 rounded-full"
               ></span>
             </label>
+          </div>
+          <div class="flex justify-between items-center mb-4">
+            <label class="text-slate-300">IR Code</label>
+            <input
+              type="text"
+              class="ir-code bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-28 text-center"
+              readonly
+            />
+            <button
+              class="learn-ir-code-button bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+            >
+              Learn
+            </button>
           </div>
         </div>
         <fieldset
@@ -674,6 +706,7 @@
                   $card.data("channelName", channel.channelName);
                 }
                 $card.find(".pin-name").val(channel.pin || "");
+                $card.find(".ir-code").val(channel.irCode || "");
                 $card.find(".led-toggle").prop("checked", channel.state);
                 $card.find(".brightness-slider").val(channel.brightness);
                 $card.find(".brightness-value").text(`${channel.brightness}%`);
@@ -707,6 +740,7 @@
                 return {
                   pin: $card.find(".pin-name").val(),
                   channelName: $card.find(".channel-name-display").text(),
+                  irCode: $card.find(".ir-code").val(),
                   state: $card.find(".led-toggle").prop("checked"),
                   schedulerEnabled: $card
                     .find(".schedule-toggle")
@@ -774,6 +808,16 @@
           }
         );
 
+        $pwmControlsContainer.on("click", ".learn-ir-code-button", function () {
+          const $button = $(this);
+          if ($button.hasClass("learning")) {
+            $button.removeClass("learning").text("Learn");
+          } else {
+            $(".learn-ir-code-button.learning").removeClass("learning").text("Learn");
+            $button.addClass("learning").text("Listening...");
+          }
+        });
+
         $pwmControlsContainer.on("click", ".edit-channel-name", function () {
           const $card = $(this).closest(".card");
           const $nameDisplay = $card.find(".channel-name-display");
@@ -838,8 +882,22 @@
               logContainer.scrollTop + 1;
             const logEntry = document.createElement("div");
             logEntry.dataset.timestamp = Date.now();
-            logEntry.innerHTML = event.data.replace(/\n/g, "<br>");
-            logContainer.appendChild(logEntry);
+            if (event.data.startsWith("ir_code:")) {
+              const irCode = event.data.split(":")[1];
+              $("#last-ir-code").val(irCode);
+              const $learningButton = $(".learn-ir-code-button.learning");
+              if ($learningButton.length) {
+                const $card = $learningButton.closest(".card");
+                if (confirm(`Assign IR code ${irCode} to ${$card.data('channelName')}?`)) {
+                  $card.find(".ir-code").val(irCode);
+                  buildPayload();
+                }
+                $learningButton.removeClass("learning").text("Learn");
+              }
+            } else {
+              logEntry.innerHTML = event.data.replace(/\n/g, "<br>");
+              logContainer.appendChild(logEntry);
+            }
             if (isScrolledToBottom) {
               logContainer.scrollTop = logContainer.scrollHeight;
             }

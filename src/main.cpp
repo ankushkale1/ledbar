@@ -10,6 +10,7 @@
 #include "MotionSensor.h"
 #include "OTAUpdater.h"
 #include "WebsocketLogger.h"
+#include "IrManager.h"
 
 // --- Project Configuration ---
 // WiFi Credentials
@@ -20,6 +21,7 @@ const char *WIFI_PASSWORD = "Ak@00789101112";
 const int STATUS_LED_PIN = D4; // On-board LED used for status (GPIO2)
 const int INVERTING_LOGIC = true;
 const int MOTION_SENSOR_PIN = D0; // Example pin, change as needed.
+const int IR_RECEIVER_PIN = D5;
 const int MOTION_ON_HOUR = 21;
 const int MOTION_OFF_HOUR = 6;
 
@@ -36,6 +38,7 @@ WebsocketLogger websocketLogger(webSocket);
 WebServerController webServerController(80, webSocket, settingsManager, ledController, scheduler, timeManager);
 MotionSensor motionSensor(MOTION_SENSOR_PIN);
 OTAUpdater otaUpdater(MDNS_HOSTNAME);
+IrManager irManager(IR_RECEIVER_PIN);
 
 // --- Timer for non-blocking scheduler check ---
 unsigned long lastSchedulerCheck = 0;
@@ -60,6 +63,9 @@ void setup()
 
     // 3.5. Initialize Motion Sensor
     motionSensor.begin();
+
+    // 3.6. Initialize IR Manager
+    irManager.begin();
 
     // 4. Connect to WiFi (this is a blocking section by design for initial setup)
     wifiConnector.connect();
@@ -104,6 +110,31 @@ void loop()
 
     // Manages WiFi connection state (e.g., handles reconnects)
     wifiConnector.handleConnection();
+
+    // Handle IR remote
+    irManager.loop();
+    if (irManager.available())
+    {
+        uint64_t irCode = irManager.read();
+        String irCodeHex = String(irCode, HEX);
+        irCodeHex.toUpperCase();
+        Log.infoln("[Main] IR Code Received: %s", irCodeHex.c_str());
+        String payload = "ir_code:" + irCodeHex;
+        webSocket.broadcastTXT(payload);
+
+        DeviceSettings &settings = settingsManager.getSettings();
+        for (auto &channel : settings.channels)
+        {
+            if (channel.irCode == irCodeHex)
+            {
+                Log.infoln("[Main] Toggling channel %s", channel.channelName.c_str());
+                channel.state = !channel.state;
+                ledController.update(settings);
+                settingsManager.saveSettings();
+                break; // Assuming one IR code per channel
+            }
+        }
+    }
 
     // Periodically update time from NTP server
     if (wifiConnector.isConnected())

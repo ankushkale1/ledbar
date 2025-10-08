@@ -81,12 +81,13 @@ bool SettingsManager::loadSettings()
         ChannelSetting ch;
         ch.pin = channelJson["pin"].as<String>();
         ch.channelName = channelJson["channelName"].as<String>();
+        ch.irCode = channelJson["irCode"].as<String>();
         ch.state = channelJson["state"];
         ch.brightness = channelJson["brightness"];
         ch.scheduleEnabled = doc["sch_en"] | true;
         ch.startTime = doc["sch_s"] | "19:00";
         ch.endTime = doc["sch_e"] | "23:30";
-        ch.sheduledBrightness = doc["sch_brightness"] | 80;
+        ch.scheduledBrightness = doc["sch_brightness"] | 80;
         settings.channels.push_back(ch);
     }
 
@@ -116,12 +117,13 @@ bool SettingsManager::saveSettings()
         JsonObject channel = channels.createNestedObject();
         channel["pin"] = ch_setting.pin;
         channel["channelName"] = ch_setting.channelName;
+        channel["irCode"] = ch_setting.irCode;
         channel["state"] = ch_setting.state;
         channel["brightness"] = ch_setting.brightness;
         channel["sch_en"] = ch_setting.scheduleEnabled;
         channel["sch_s"] = ch_setting.startTime;
         channel["sch_e"] = ch_setting.endTime;
-        channel["sch_brightness"] = ch_setting.sheduledBrightness;
+        channel["sch_brightness"] = ch_setting.scheduledBrightness;
     }
 
     if (serializeJson(doc, configFile) == 0)

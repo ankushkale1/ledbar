@@ -98,12 +98,13 @@ void WebServerController::handleSettings()
         ChannelSetting ch;
         ch.pin = channelJson["pin"].as<String>();
         ch.channelName = channelJson["channelName"].as<String>();
+        ch.irCode = channelJson["irCode"].as<String>();
         ch.state = channelJson["state"];
         ch.brightness = channelJson["brightness"];
         ch.scheduleEnabled = channelJson["schedulerEnabled"];
         ch.startTime = channelJson["scheduler_start"].as<String>();
         ch.endTime = channelJson["scheduler_end"].as<String>();
-        ch.sheduledBrightness = channelJson["scheduler_brightness"];
+        ch.scheduledBrightness = channelJson["scheduler_brightness"];
         settings.channels.push_back(ch);
     }
 
@@ -128,13 +129,14 @@ void WebServerController::handleStatus()
     {
         JsonObject channel = channels.createNestedObject();
         channel["pin"] = ch_setting.pin;
+        channel["irCode"] = ch_setting.irCode;
         channel["channelName"] = ch_setting.channelName;
         channel["state"] = ch_setting.state;
         channel["brightness"] = ch_setting.brightness;
         channel["schedulerEnabled"] = ch_setting.scheduleEnabled;
         channel["scheduler_start"] = ch_setting.startTime;
         channel["scheduler_end"] = ch_setting.endTime;
-        channel["scheduler_brightness"] = ch_setting.sheduledBrightness;
+        channel["scheduler_brightness"] = ch_setting.scheduledBrightness;
     }
 
     String json;

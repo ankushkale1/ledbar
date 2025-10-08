@@ -76,7 +76,7 @@ std::vector<SchedulerAction> Scheduler::checkSchedule(int currentHour, int curre
                 SchedulerAction action;
                 action.channel = channel.pin;
                 action.stateOnOFF = true;
-                action.brightness = channel.sheduledBrightness; // Use scheduled brightness
+                action.brightness = channel.scheduledBrightness; // Use scheduled brightness
                 actions.push_back(action);
             }
             else
@@ -85,7 +85,7 @@ std::vector<SchedulerAction> Scheduler::checkSchedule(int currentHour, int curre
                 SchedulerAction action;
                 action.channel = channel.pin;
                 action.stateOnOFF = false;
-                action.brightness = channel.sheduledBrightness;
+                action.brightness = channel.scheduledBrightness;
                 actions.push_back(action);
             }
         }
