@@ -5,6 +5,7 @@
 
 #define MDNS_NAME_EEPROM_ADDR 0
 const String default_mDNSName = "ledbar";
+#define JSON_BUFFER_SIZE 2048 // more the channels greater the size, 1024 per 4 channels approx
 
 SettingsManager::SettingsManager()
 {
@@ -58,7 +59,7 @@ bool SettingsManager::loadSettings()
 
     // Use a DynamicJsonDocument to parse the file.
     // Adjust the size if your settings object grows.
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
     DeserializationError error = deserializeJson(doc, configFile);
     configFile.close();
 
@@ -104,7 +105,7 @@ bool SettingsManager::saveSettings()
         return false;
     }
 
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE);
 
     // Save scheduler settings
     doc["gmt_offset"] = settings.gmtOffsetSeconds;

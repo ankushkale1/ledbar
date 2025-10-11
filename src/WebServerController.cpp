@@ -4,6 +4,8 @@
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
 
+#define JSON_BUFFER_SIZE 2048 // more the channels greater the size, 1024 per 4 channels approx
+
 WebServerController::WebServerController(int port, WebSocketsServer &ws, SettingsManager &settingsMgr, LedController &ledCtrl, Scheduler &scheduler, TimeManager &timeMgr)
     : _server(port), _ws(ws), _settingsManager(settingsMgr), _ledController(ledCtrl), _scheduler(scheduler), _timeManager(timeMgr) {}
 
@@ -57,7 +59,7 @@ void WebServerController::handleSettings()
     }
 
     String body = _server.arg("plain");
-    DynamicJsonDocument doc(1024); // Adjust size as needed for your payload
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE); // Adjust size as needed for your payload
     DeserializationError error = deserializeJson(doc, body);
 
     if (error)
@@ -119,7 +121,7 @@ void WebServerController::handleSettings()
 void WebServerController::handleStatus()
 {
     DeviceSettings &settings = _settingsManager.getSettings();
-    DynamicJsonDocument doc(1024); // Adjust size as needed
+    DynamicJsonDocument doc(JSON_BUFFER_SIZE); // Adjust size as needed
 
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
     doc["mDNSName"] = settings.mDNSName;
