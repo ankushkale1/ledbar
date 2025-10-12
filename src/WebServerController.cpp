@@ -94,11 +94,34 @@ void WebServerController::handleSettings()
     }
     // Update channel settings from JSON
     JsonArray channelsArray = doc["channels"].as<JsonArray>();
+    const char *safePins[] = {"D1", "D2", "D3", "D5", "D6", "D7"};
+    const int numSafePins = sizeof(safePins) / sizeof(safePins[0]);
+
     settings.channels.clear(); // Clear old channels before adding new ones
     for (JsonObject channelJson : channelsArray)
     {
         ChannelSetting ch;
-        ch.pin = channelJson["pin"].as<String>();
+        String pin = channelJson["pin"].as<String>();
+        bool isSafe = false;
+        for (int i = 0; i < numSafePins; i++)
+        {
+            if (pin == safePins[i])
+            {
+                isSafe = true;
+                break;
+            }
+        }
+
+        if (isSafe)
+        {
+            ch.pin = pin;
+        }
+        else
+        {
+            Log.warningln("[Web] Invalid pin specified: %s. Ignoring.", pin.c_str());
+            ch.pin = ""; // Invalid pin, assign empty string
+        }
+
         ch.channelName = channelJson["channelName"].as<String>();
         ch.irCode = channelJson["irCode"].as<String>();
         ch.state = channelJson["state"];

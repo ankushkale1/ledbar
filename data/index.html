@@ -278,12 +278,28 @@
           Serial Monitor
         </summary>
         <div class="flex justify-between items-center mt-2">
-          <button
-            id="clear-log-button"
-            class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-1 px-2 rounded transition-colors border border-slate-600"
-          >
-            Clear Log
-          </button>
+          <div>
+            <button
+              id="clear-log-button"
+              class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-1 px-2 rounded transition-colors border border-slate-600"
+            >
+              Clear Log
+            </button>
+          </div>
+          <div class="flex items-center">
+            <input
+              type="text"
+              id="log-filter-input"
+              placeholder="Search logs..."
+              class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-1 focus:border-blue-500 focus:outline-none text-sm"
+            />
+            <button
+              id="clear-filter-button"
+              class="ml-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-1 px-2 rounded transition-colors border border-slate-600"
+            >
+              Clear
+            </button>
+          </div>
         </div>
 
         <div
@@ -936,6 +952,23 @@
 
         $("#clear-log-button").on("click", function () {
           $("#log-container").empty();
+        });
+
+        $("#log-filter-input").on("keyup", function () {
+          const filterText = $(this).val().toLowerCase();
+          $("#log-container > div").each(function () {
+            const logText = $(this).text().toLowerCase();
+            if (logText.includes(filterText)) {
+              $(this).show();
+            } else {
+              $(this).hide();
+            }
+          });
+        });
+
+        $("#clear-filter-button").on("click", function () {
+          $("#log-filter-input").val("");
+          $("#log-container > div").show();
         });
 
         $("#serial-monitor-details").on("toggle", function () {

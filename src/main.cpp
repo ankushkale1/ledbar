@@ -12,6 +12,28 @@
 #include "WebsocketLogger.h"
 #include "IrManager.h"
 
+// DONT USE PINS
+// D4	GPIO2	Boot Mode Pin & LED. Connected to the onboard LED. Must be floating or pulled HIGH during boot.
+// D8	GPIO15	Boot Mode Pin. Must be pulled LOW for the board to boot normally. Connecting a component that pulls it HIGH will prevent the board from starting.
+
+// SAFE PINS
+//  D0 (GPIO16)	- NO PWM, Can be used for output. Cannot be used for interrupts, PWM, or I2C. Used to wake the ESP from deep sleep.
+//  D1 (GPIO5)  - PWM, Often used for I2C (SCL)
+//  D2 (GPIO4)  - PWM, Often used for I2C (SDA)
+//  D3	GPIO0	- PWM, Boot Mode Pin. Already internally pulled high, but circuit must make sure it stays high at start, my 2.2k ohm resistor
+//                connected between bjt gate and esp pin is enough to make sure pin stays high at start. Connected to the "FLASH" button.
+//                The ESP8266 will enter programming mode if this pin is pulled LOW on boot.
+//                Your circuit must ensure this pin is HIGH when the board powers up.
+//  D5 (GPIO14) - PWM, Often used for SPI (SCK)
+//  D6 (GPIO12) - PWM, Often used for SPI (MISO)
+//  D7 (GPIO13) - PWM, Often used for SPI (MOSI)
+
+// CAN USE BUT NOT RECOMMENDED
+//  TX	GPIO1	Used for the hardware Serial Port (UART0). It is essential for uploading code and using the Serial Monitor for debugging.
+//  RX	GPIO3	Used for the hardware Serial Port (UART0). Essential for receiving serial data.
+//  A0	ADC0	This is the only analog input pin on the board. While it can be used as a digital pin, you should save it for reading analog sensors (like potentiometers, LDRs, etc.).
+//  SD2, SD3	GPIO9, 10	These are typically connected internally to the ESP8266's flash memory chip and are not exposed or safe to use on most NodeMCU boards.
+
 // --- Project Configuration ---
 // WiFi Credentials
 const char *WIFI_SSID = "JioFiber-4G";
@@ -20,8 +42,8 @@ const char *WIFI_PASSWORD = "Ak@00789101112";
 // Pin Assignments
 const int STATUS_LED_PIN = D4; // On-board LED used for status (GPIO2)
 const int INVERTING_LOGIC = true;
-const int MOTION_SENSOR_PIN = D0; // Example pin, change as needed.
-const int IR_RECEIVER_PIN = D5;
+// const int MOTION_SENSOR_PIN = D0; // we dont have enough safe pins so disabling this
+const int IR_RECEIVER_PIN = A0;
 const int MOTION_ON_HOUR = 21;
 const int MOTION_OFF_HOUR = 6;
 
@@ -36,7 +58,7 @@ MDNSManager mdnsManager(MDNS_HOSTNAME);
 WebSocketsServer webSocket(81);
 WebsocketLogger websocketLogger(webSocket);
 WebServerController webServerController(80, webSocket, settingsManager, ledController, scheduler, timeManager);
-MotionSensor motionSensor(MOTION_SENSOR_PIN);
+// MotionSensor motionSensor(MOTION_SENSOR_PIN);
 OTAUpdater otaUpdater(MDNS_HOSTNAME);
 IrManager irManager(IR_RECEIVER_PIN);
 
@@ -62,7 +84,7 @@ void setup()
     scheduler.updateSchedule(settings);
 
     // 3.5. Initialize Motion Sensor
-    motionSensor.begin();
+    // motionSensor.begin();
 
     // 3.6. Initialize IR Manager
     irManager.begin();
@@ -96,7 +118,7 @@ void setup()
 
 void loop()
 {
-    // unsigned long loopStartTime = millis();
+    unsigned long loopStartTime = millis();
 
     // Handle OTA updates
     ArduinoOTA.handle();
@@ -144,86 +166,86 @@ void loop()
 
     // Motion detection logic
     int currentHour = timeManager.getHours();
-    if (motionSensor.motionDetected() && (currentHour >= MOTION_ON_HOUR || currentHour < MOTION_OFF_HOUR))
+    // if (motionSensor.motionDetected() && (currentHour >= MOTION_ON_HOUR || currentHour < MOTION_OFF_HOUR))
+    // {
+    //     Log.infoln("[Main] Motion detected at night. Turning on lights.");
+    //     DeviceSettings &settings = settingsManager.getSettings();
+
+    //     bool settingsChanged = false;
+    //     for (auto &channel : settings.channels)
+    //     {
+    //         if (!channel.state)
+    //         {
+    //             channel.state = true;
+    //             settingsChanged = true;
+    //         }
+    //     }
+    //     if (settingsChanged)
+    //     {
+    //         ledController.update(settings);
+    //     }
+
+    //     // Keep the lights on for 5 minutes
+    //     delay(300000); // 5 minutes delay
+
+    //     Log.infoln("[Main] Motion timeout. Turning off lights.");
+    //     settingsChanged = false;
+    //     for (auto &channel : settings.channels)
+    //     {
+    //         if (channel.state)
+    //         {
+    //             channel.state = false;
+    //             settingsChanged = true;
+    //         }
+    //     }
+    //     if (settingsChanged)
+    //     {
+    //         ledController.update(settings);
+    //     }
+    // }
+    // else
+    // {
+    // Check the scheduler periodically (non-blocking)
+    if (millis() - lastSchedulerCheck > SCHEDULER_CHECK_INTERVAL)
     {
-        Log.infoln("[Main] Motion detected at night. Turning on lights.");
-        DeviceSettings &settings = settingsManager.getSettings();
+        lastSchedulerCheck = millis();
 
-        bool settingsChanged = false;
-        for (auto &channel : settings.channels)
+        if (wifiConnector.isConnected())
         {
-            if (!channel.state)
+            DeviceSettings &settings = settingsManager.getSettings();
+            std::vector<SchedulerAction> actions = scheduler.checkSchedule(
+                timeManager.getHours(),
+                timeManager.getMinutes());
+
+            bool settingsChanged = false;
+
+            for (const auto &action : actions)
             {
-                channel.state = true;
-                settingsChanged = true;
-            }
-        }
-        if (settingsChanged)
-        {
-            ledController.update(settings);
-        }
+                Log.infoln("[Main] Scheduler Action: Channel: %s, State: %s, Brightness: %d\n",
+                           action.channel.c_str(),
+                           action.stateOnOFF ? "ON" : "OFF",
+                           action.brightness);
+                // Update the LED controller based on the action
 
-        // Keep the lights on for 5 minutes
-        delay(300000); // 5 minutes delay
-
-        Log.infoln("[Main] Motion timeout. Turning off lights.");
-        settingsChanged = false;
-        for (auto &channel : settings.channels)
-        {
-            if (channel.state)
-            {
-                channel.state = false;
-                settingsChanged = true;
-            }
-        }
-        if (settingsChanged)
-        {
-            ledController.update(settings);
-        }
-    }
-    else
-    {
-        // Check the scheduler periodically (non-blocking)
-        if (millis() - lastSchedulerCheck > SCHEDULER_CHECK_INTERVAL)
-        {
-            lastSchedulerCheck = millis();
-
-            if (wifiConnector.isConnected())
-            {
-                DeviceSettings &settings = settingsManager.getSettings();
-                std::vector<SchedulerAction> actions = scheduler.checkSchedule(
-                    timeManager.getHours(),
-                    timeManager.getMinutes());
-
-                bool settingsChanged = false;
-
-                for (const auto &action : actions)
+                for (auto &channel : settings.channels)
                 {
-                    Log.infoln("[Main] Scheduler Action: Channel: %s, State: %s, Brightness: %d\n",
-                               action.channel.c_str(),
-                               action.stateOnOFF ? "ON" : "OFF",
-                               action.brightness);
-                    // Update the LED controller based on the action
-
-                    for (auto &channel : settings.channels)
+                    if (channel.pin == action.channel)
                     {
-                        if (channel.pin == action.channel)
-                        {
-                            if (channel.scheduleEnabled && action.stateOnOFF)
-                                channel.schedulerActive = true;
-                            else
-                                channel.schedulerActive = false;
-                            settingsChanged = true;
-                        }
+                        if (channel.scheduleEnabled && action.stateOnOFF)
+                            channel.schedulerActive = true;
+                        else
+                            channel.schedulerActive = false;
+                        settingsChanged = true;
                     }
-                    if (settingsChanged)
-                    {
-                        ledController.update(settings);
-                    }
+                }
+                if (settingsChanged)
+                {
+                    ledController.update(settings);
                 }
             }
         }
     }
+    //}
 
-    // Log.verboseln("[Main] Loop duration: %lu ms", millis() - loopStartTime);
+    Log.verboseln("[Main] Loop duration: %lu ms", millis() - loopStartTime);
 }
