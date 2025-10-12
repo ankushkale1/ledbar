@@ -43,7 +43,7 @@ const char *WIFI_PASSWORD = "Ak@00789101112";
 const int STATUS_LED_PIN = D4; // On-board LED used for status (GPIO2)
 const int INVERTING_LOGIC = true;
 // const int MOTION_SENSOR_PIN = D0; // we dont have enough safe pins so disabling this
-const int IR_RECEIVER_PIN = A0;
+const int IR_RECEIVER_PIN = D4;
 const int MOTION_ON_HOUR = 21;
 const int MOTION_OFF_HOUR = 6;
 
@@ -118,7 +118,7 @@ void setup()
 
 void loop()
 {
-    unsigned long loopStartTime = millis();
+    // unsigned long loopStartTime = millis();
 
     // Handle OTA updates
     ArduinoOTA.handle();
@@ -145,15 +145,45 @@ void loop()
         webSocket.broadcastTXT(payload);
 
         DeviceSettings &settings = settingsManager.getSettings();
-        for (auto &channel : settings.channels)
+
+        if (irCodeHex == settings.irCodeBrightnessUp)
         {
-            if (channel.irCode == irCodeHex)
+            Log.infoln("[Main] Brightness Up");
+            for (auto &channel : settings.channels)
             {
-                Log.infoln("[Main] Toggling channel %s", channel.channelName.c_str());
-                channel.state = !channel.state;
-                ledController.update(settings);
-                settingsManager.saveSettings();
-                break; // Assuming one IR code per channel
+                if (channel.state)
+                {
+                    channel.brightness = min(100, channel.brightness + 10);
+                }
+            }
+            ledController.update(settings);
+            settingsManager.saveSettings();
+        }
+        else if (irCodeHex == settings.irCodeBrightnessDown)
+        {
+            Log.infoln("[Main] Brightness Down");
+            for (auto &channel : settings.channels)
+            {
+                if (channel.state)
+                {
+                    channel.brightness = max(0, channel.brightness - 10);
+                }
+            }
+            ledController.update(settings);
+            settingsManager.saveSettings();
+        }
+        else
+        {
+            for (auto &channel : settings.channels)
+            {
+                if (channel.irCode == irCodeHex)
+                {
+                    Log.infoln("[Main] Toggling channel %s", channel.channelName.c_str());
+                    channel.state = !channel.state;
+                    ledController.update(settings);
+                    settingsManager.saveSettings();
+                    break; // Assuming one IR code per channel
+                }
             }
         }
     }
@@ -247,5 +277,5 @@ void loop()
     }
     //}
 
-    Log.verboseln("[Main] Loop duration: %lu ms", millis() - loopStartTime);
+    // Log.verboseln("[Main] Loop duration: %lu ms", millis() - loopStartTime);
 }

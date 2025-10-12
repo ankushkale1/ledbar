@@ -262,6 +262,20 @@
               readonly
             />
           </div>
+          <div class="flex justify-between items-center mb-2">
+            <label for="ir-code-brightness-up" class="text-slate-300">Brightness Up Code</label>
+            <div class="flex items-center">
+              <input type="text" id="ir-code-brightness-up" class="ir-code-global bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-28 text-center" readonly />
+              <button class="learn-ir-code-global-button bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors ml-2">Learn</button>
+            </div>
+          </div>
+          <div class="flex justify-between items-center">
+            <label for="ir-code-brightness-down" class="text-slate-300">Brightness Down Code</label>
+            <div class="flex items-center">
+              <input type="text" id="ir-code-brightness-down" class="ir-code-global bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-28 text-center" readonly />
+              <button class="learn-ir-code-global-button bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors ml-2">Learn</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -714,6 +728,12 @@
             if (data.mDNSName !== undefined) {
               $mDnsname.val(data.mDNSName);
             }
+            if (data.irCodeBrightnessUp !== undefined) {
+              $("#ir-code-brightness-up").val(data.irCodeBrightnessUp);
+            }
+            if (data.irCodeBrightnessDown !== undefined) {
+              $("#ir-code-brightness-down").val(data.irCodeBrightnessDown);
+            }
             data.channels?.forEach((channel, i) => {
               const $card = $(".card").eq(i);
               if ($card.length) {
@@ -772,6 +792,8 @@
               .get(),
             gmt_offset: parseInt($timezoneSelect.val()),
             mDNSName: $mDnsname.val().trim(),
+            irCodeBrightnessUp: $("#ir-code-brightness-up").val(),
+            irCodeBrightnessDown: $("#ir-code-brightness-down").val(),
           };
           debouncedSendSettings(payload);
         }
@@ -829,7 +851,17 @@
           if ($button.hasClass("learning")) {
             $button.removeClass("learning").text("Learn");
           } else {
-            $(".learn-ir-code-button.learning").removeClass("learning").text("Learn");
+            $(".learn-ir-code-button.learning, .learn-ir-code-global-button.learning").removeClass("learning").text("Learn");
+            $button.addClass("learning").text("Listening...");
+          }
+        });
+
+        $("body").on("click", ".learn-ir-code-global-button", function () {
+          const $button = $(this);
+          if ($button.hasClass("learning")) {
+            $button.removeClass("learning").text("Learn");
+          } else {
+            $(".learn-ir-code-button.learning, .learn-ir-code-global-button.learning").removeClass("learning").text("Learn");
             $button.addClass("learning").text("Listening...");
           }
         });
@@ -902,6 +934,8 @@
               const irCode = event.data.split(":")[1];
               $("#last-ir-code").val(irCode);
               const $learningButton = $(".learn-ir-code-button.learning");
+              const $learningGlobalButton = $(".learn-ir-code-global-button.learning");
+
               if ($learningButton.length) {
                 const $card = $learningButton.closest(".card");
                 if (confirm(`Assign IR code ${irCode} to ${$card.data('channelName')}?`)) {
@@ -909,6 +943,13 @@
                   buildPayload();
                 }
                 $learningButton.removeClass("learning").text("Learn");
+              } else if ($learningGlobalButton.length) {
+                const $input = $learningGlobalButton.prev("input");
+                if (confirm(`Assign IR code ${irCode} to this action?`)) {
+                  $input.val(irCode);
+                  buildPayload();
+                }
+                $learningGlobalButton.removeClass("learning").text("Learn");
               }
             } else {
               logEntry.innerHTML = event.data.replace(/\n/g, "<br>");

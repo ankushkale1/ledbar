@@ -74,6 +74,8 @@ void WebServerController::handleSettings()
 
     // Update scheduler settings from JSON
     settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Use default if missing
+    settings.irCodeBrightnessUp = doc["irCodeBrightnessUp"].as<String>();
+    settings.irCodeBrightnessDown = doc["irCodeBrightnessDown"].as<String>();
 
     String newMDNSName = doc["mDNSName"].as<String>();
 
@@ -148,6 +150,8 @@ void WebServerController::handleStatus()
 
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
     doc["mDNSName"] = settings.mDNSName;
+    doc["irCodeBrightnessUp"] = settings.irCodeBrightnessUp;
+    doc["irCodeBrightnessDown"] = settings.irCodeBrightnessDown;
 
     JsonArray channels = doc.createNestedArray("channels");
     for (const auto &ch_setting : settings.channels)
