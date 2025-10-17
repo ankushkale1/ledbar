@@ -17,8 +17,3 @@ void MDNSManager::begin()
         Log.infoln("[mDNS] HTTP service registered.");
     }
 }
-
-void MDNSManager::loop()
-{
-    MDNS.update(); // Keep the mDNS responder active
-}

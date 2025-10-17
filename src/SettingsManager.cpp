@@ -1,26 +1,23 @@
 #include "SettingsManager.h"
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
-#include <EEPROM.h>
 
-#define MDNS_NAME_EEPROM_ADDR 0
-const String default_mDNSName = "ledbar";
 #define JSON_BUFFER_SIZE 2048 // more the channels greater the size, 1024 per 4 channels approx
+const String default_mDNSName = "ledbar";
 
 SettingsManager::SettingsManager()
 {
     // Initialization is handled in begin() to ensure filesystem is ready.
-    begin();
 }
 
 void SettingsManager::begin()
 {
+    preferences.begin("settings", false);
     if (mountFS())
     {
-        EEPROM.begin(512);
-        if (!loadMDNSNameFromEEPROM())
+        if (!loadMDNSName())
         {
-            saveMDNSNameToEEPROM(default_mDNSName); // Default mDNS name
+            saveMDNSName(default_mDNSName); // Default mDNS name
         }
         if (!loadSettings())
         {
@@ -29,12 +26,12 @@ void SettingsManager::begin()
             if (settings.channels.empty())
             {
                 ChannelSetting channel1;
-                channel1.pin = "D1";
+                channel1.pin = "GPIO1";
                 channel1.state = false;
                 channel1.brightness = 80;
                 settings.channels.push_back(channel1);
                 ChannelSetting channel2;
-                channel2.pin = "D2";
+                channel2.pin = "GPIO2";
                 channel2.state = false;
                 channel2.brightness = 80;
                 settings.channels.push_back(channel2);
@@ -50,7 +47,7 @@ void SettingsManager::begin()
 
 bool SettingsManager::loadSettings()
 {
-    File configFile = LittleFS.open("/settings.json", "r");
+    File configFile = SPIFFS.open("/settings.json", "r");
     if (!configFile)
     {
         Log.infoln("[Settings] Failed to open config file for reading.");
@@ -72,7 +69,7 @@ bool SettingsManager::loadSettings()
 
     // Load scheduler settings, providing defaults if keys are missing
     settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Default to IST if not present
-    loadMDNSNameFromEEPROM();
+    loadMDNSName();
 
     // Load channel settings
     settings.channels.clear(); // Clear existing channels before loading new ones
@@ -98,7 +95,7 @@ bool SettingsManager::loadSettings()
 
 bool SettingsManager::saveSettings()
 {
-    File configFile = LittleFS.open("/settings.json", "w");
+    File configFile = SPIFFS.open("/settings.json", "w");
     if (!configFile)
     {
         Log.infoln("[Settings] Failed to open config file for writing.");
@@ -109,7 +106,7 @@ bool SettingsManager::saveSettings()
 
     // Save scheduler settings
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
-    saveMDNSNameToEEPROM(settings.mDNSName);
+    saveMDNSName(settings.mDNSName);
 
     // Save channel settings
     JsonArray channels = doc.createNestedArray("channels");
@@ -144,58 +141,29 @@ DeviceSettings &SettingsManager::getSettings()
     return settings;
 }
 
-bool SettingsManager::loadMDNSNameFromEEPROM()
+bool SettingsManager::loadMDNSName()
 {
-    String storedMDNSName = "";
-    for (int i = 0; i < 32; i++)
-    { // Assuming a max length of 32 for mDNS name
-        char c = EEPROM.read(MDNS_NAME_EEPROM_ADDR + i);
-        if (c == '\0')
-            break;
-        storedMDNSName += c;
-    }
-
-    if (storedMDNSName.length() > 0)
-    {
-        settings.mDNSName = storedMDNSName;
-        Log.infoln("[Settings] mDNS name loaded from EEPROM: %s", settings.mDNSName.c_str());
-        return true;
-    }
-    else
-    {
-        settings.mDNSName = default_mDNSName; // Default if EEPROM is empty
-        Log.infoln("[Settings] No mDNS name found in EEPROM, using default: %s", settings.mDNSName.c_str());
-        return false;
-    }
+    String storedMDNSName = preferences.getString("mDNSName", default_mDNSName);
+    settings.mDNSName = storedMDNSName;
+    Log.infoln("[Settings] mDNS name loaded from preferences: %s", settings.mDNSName.c_str());
+    return true;
 }
 
-void SettingsManager::saveMDNSNameToEEPROM(const String &mDNSName)
+void SettingsManager::saveMDNSName(const String &mDNSName)
 {
-
-    for (int i = 0; i < 32; i++)
-    {
-        EEPROM.write(MDNS_NAME_EEPROM_ADDR + i, i < mDNSName.length() ? mDNSName[i] : '\0');
-    }
-    bool commit_result = EEPROM.commit();
-    if (commit_result)
-    {
-        Log.infoln("[Settings] mDNS name saved to EEPROM: %s", mDNSName.c_str());
-    }
-    else
-    {
-        Log.errorln("[Settings] EEPROM commit failed!");
-    }
+    preferences.putString("mDNSName", mDNSName);
+    Log.infoln("[Settings] mDNS name saved to preferences: %s", mDNSName.c_str());
 }
 
 bool SettingsManager::mountFS()
 {
-    if (!LittleFS.begin())
+    if (!SPIFFS.begin(true))
     {
         Log.infoln("[Settings] Failed to mount file system. Formatting...");
-        if (LittleFS.format())
+        if (SPIFFS.format())
         {
             Log.infoln("[Settings] Filesystem formatted successfully.");
-            return LittleFS.begin();
+            return SPIFFS.begin(true);
         }
         else
         {

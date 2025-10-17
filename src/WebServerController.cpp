@@ -1,6 +1,6 @@
 #include "WebServerController.h"
-#include "LittleFS.h"
-#include <ESP8266mDNS.h>
+#include "SPIFFS.h"
+#include <ESPmDNS.h>
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
 
@@ -39,7 +39,7 @@ void WebServerController::handleRoot()
 
 void WebServerController::serveFile(const String &filePath)
 {
-    File file = LittleFS.open(filePath, "r");
+    File file = SPIFFS.open(filePath, "r");
     if (file)
     {
         _server.streamFile(file, getContentType(filePath));

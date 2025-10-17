@@ -1,7 +1,7 @@
 #ifndef WEBSERVER_CONTROLLER_H
 #define WEBSERVER_CONTROLLER_H
 
-#include <ESP8266WebServer.h>
+#include <WebServer.h>
 #include <WebSocketsServer.h>
 #include "SettingsManager.h"
 #include "LedController.h"
@@ -17,7 +17,7 @@ public:
     String getContentType(const String& filePath);
 
 private:
-    ESP8266WebServer _server;
+    WebServer _server;
     WebSocketsServer& _ws;
     SettingsManager& _settingsManager;
     LedController& _ledController;

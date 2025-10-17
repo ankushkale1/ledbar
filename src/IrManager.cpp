@@ -1,38 +1,38 @@
 #include "IrManager.h"
-#include <IRremoteESP8266.h>
-#include <IRrecv.h>
-#include <IRutils.h>
-
-// Globals
-IRrecv* irrecv = nullptr;
-decode_results results;
+#include <IRremote.h>
 
 IrManager::IrManager(uint8_t irPin) : _irPin(irPin), _irAvailable(false), _irData(0) {}
 
-void IrManager::begin() {
-    irrecv = new IRrecv(_irPin);
-    irrecv->enableIRIn();
+void IrManager::begin()
+{
+    IrReceiver.begin(_irPin);
 }
 
-void IrManager::loop() {
-    if (irrecv->decode(&results)) {
-        if (results.value != 0) {
-            _irData = results.value;
+void IrManager::loop()
+{
+    if (IrReceiver.decode())
+    {
+        if (IrReceiver.decodedIRData.decodedRawData != 0)
+        {
+            _irData = IrReceiver.decodedIRData.decodedRawData;
             _irAvailable = true;
         }
-        irrecv->resume();
+        IrReceiver.resume();
     }
 }
 
-bool IrManager::available() {
+bool IrManager::available()
+{
     return _irAvailable;
 }
 
-uint64_t IrManager::read() {
+uint64_t IrManager::read()
+{
     _irAvailable = false;
     return _irData;
 }
 
-void IrManager::resume() {
-    irrecv->resume();
+void IrManager::resume()
+{
+    IrReceiver.resume();
 }

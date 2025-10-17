@@ -3,7 +3,8 @@
 
 #include <Arduino.h>
 
-class IrManager {
+class IrManager
+{
 public:
     IrManager(uint8_t irPin);
     void begin();
@@ -16,7 +17,6 @@ private:
     uint8_t _irPin;
     volatile bool _irAvailable;
     volatile uint64_t _irData;
-    static void IRAM_ATTR irISR();
 };
 
 #endif // IR_MANAGER_H

@@ -2,7 +2,8 @@
 #define SETTINGS_MANAGER_H
 
 #include <Arduino.h>
-#include <LittleFS.h>
+#include <SPIFFS.h>
+#include <Preferences.h>
 #include <vector>
 
 // A struct to hold settings for a single PWM channel
@@ -16,7 +17,7 @@ struct ChannelSetting
   bool scheduleEnabled = false;
   String startTime = "22:00";
   String endTime = "06:00";
-  int scheduledBrightness = 0;   // Default brightness for scheduled mode
+  int scheduledBrightness = 0;  // Default brightness for scheduled mode
   bool schedulerActive = false; // Indicates if the scheduler is active for this channel
 };
 
@@ -39,12 +40,15 @@ public:
   bool loadSettings();
   bool saveSettings();
   DeviceSettings &getSettings();
+  bool loadMDNSName();
+  void saveMDNSName(const String &mDNSName);
   bool loadMDNSNameFromEEPROM();
   void saveMDNSNameToEEPROM(const String &mDNSName);
 
 private:
   DeviceSettings settings;
   bool mountFS();
+  Preferences preferences;
 };
 
 #endif

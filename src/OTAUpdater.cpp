@@ -5,7 +5,7 @@ OTAUpdater::OTAUpdater(const char *hostname) : _hostname(hostname) {}
 
 void OTAUpdater::begin()
 {
-    ArduinoOTA.setPort(8266);
+    ArduinoOTA.setPort(3232);
     ArduinoOTA.setHostname(_hostname);
     // ArduinoOTA.setPassword("admin");  // Uncomment and set password if needed
 

@@ -15,7 +15,7 @@ WiFiConnector::WiFiConnector(const char *ssid, const char *password, int statusL
 void WiFiConnector::connect()
 {
     Log.infoln("[WiFi] Starting connection process...");
-    WiFi.setSleepMode(WIFI_NONE_SLEEP); // Disable WiFi sleep mode
+    WiFi.setSleep(false); // Disable WiFi sleep mode for ESP32
     _currentState = WIFI_CONNECTING;
     _lastAttemptTimestamp = millis();
     WiFi.begin(_ssid, _password);

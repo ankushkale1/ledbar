@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "SettingsManager.h" // For DeviceSettings
+#include <map>
 
 class LedController
 {
@@ -28,9 +29,10 @@ public:
 
 private:
     bool _invertingLogic;
-    // The ESP8266 has a 10-bit PWM resolution, so the range is 0-255.
-    const int PWM_RANGE = 100;
-    const int PWM_FREQ = 256; // Set PWM frequency to 256Hz
+    std::map<int, int> _pinChannelMap;
+    int _nextChannel = 0;
+    const int PWM_RESOLUTION = 8;
+    const int PWM_RANGE = 255;
     int pinNameToNumber(const String &pinName);
 };
 

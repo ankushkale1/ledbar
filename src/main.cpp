@@ -12,38 +12,15 @@
 #include "WebsocketLogger.h"
 #include "IrManager.h"
 
-// DONT USE PINS
-// D4	GPIO2	Boot Mode Pin & LED. Connected to the onboard LED. Must be floating or pulled HIGH during boot.
-// D8	GPIO15	Boot Mode Pin. Must be pulled LOW for the board to boot normally. Connecting a component that pulls it HIGH will prevent the board from starting.
-
-// SAFE PINS
-//  D0 (GPIO16)	- NO PWM, Can be used for output. Cannot be used for interrupts, PWM, or I2C. Used to wake the ESP from deep sleep.
-//  D1 (GPIO5)  - PWM, Often used for I2C (SCL)
-//  D2 (GPIO4)  - PWM, Often used for I2C (SDA)
-//  D3	GPIO0	- PWM, Boot Mode Pin. Already internally pulled high, but circuit must make sure it stays high at start, my 2.2k ohm resistor
-//                connected between bjt gate and esp pin is enough to make sure pin stays high at start. Connected to the "FLASH" button.
-//                The ESP8266 will enter programming mode if this pin is pulled LOW on boot.
-//                Your circuit must ensure this pin is HIGH when the board powers up.
-//  D5 (GPIO14) - PWM, Often used for SPI (SCK)
-//  D6 (GPIO12) - PWM, Often used for SPI (MISO)
-//  D7 (GPIO13) - PWM, Often used for SPI (MOSI)
-
-// CAN USE BUT NOT RECOMMENDED
-//  TX	GPIO1	Used for the hardware Serial Port (UART0). It is essential for uploading code and using the Serial Monitor for debugging.
-//  RX	GPIO3	Used for the hardware Serial Port (UART0). Essential for receiving serial data.
-//  A0	ADC0	This is the only analog input pin on the board. While it can be used as a digital pin, you should save it for reading analog sensors (like potentiometers, LDRs, etc.).
-//  SD2, SD3	GPIO9, 10	These are typically connected internally to the ESP8266's flash memory chip and are not exposed or safe to use on most NodeMCU boards.
-
 // --- Project Configuration ---
 // WiFi Credentials
 const char *WIFI_SSID = "JioFiber-4G";
 const char *WIFI_PASSWORD = "Ak@00789101112";
 
 // Pin Assignments
-const int STATUS_LED_PIN = D4; // On-board LED used for status (GPIO2)
+const int STATUS_LED_PIN = 8; // On-board LED for ESP32-C3 (GPIO8)
 const int INVERTING_LOGIC = true;
-// const int MOTION_SENSOR_PIN = D0; // we dont have enough safe pins so disabling this
-const int IR_RECEIVER_PIN = D4;
+const int IR_RECEIVER_PIN = 10; // Using GPIO10 for IR receiver on ESP32-C3
 const int MOTION_ON_HOUR = 21;
 const int MOTION_OFF_HOUR = 6;
 
@@ -73,7 +50,7 @@ void setup()
     Log.infoln("\n[Main] Booting device...");
 
     // 1. Initialize filesystem and load settings
-    // settingsManager.begin();
+    settingsManager.begin();
     DeviceSettings &settings = settingsManager.getSettings();
 
     // 2. Initialize LED controller and apply loaded settings
@@ -126,9 +103,6 @@ void loop()
     // Must be called every loop to service web requests
     webServerController.handleClient();
     websocketLogger.loop();
-
-    // Keep mDNS service active
-    mdnsManager.loop();
 
     // Manages WiFi connection state (e.g., handles reconnects)
     wifiConnector.handleConnection();

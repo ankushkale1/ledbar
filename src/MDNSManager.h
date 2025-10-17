@@ -1,7 +1,7 @@
 #ifndef MDNS_MANAGER_H
 #define MDNS_MANAGER_H
 
-#include <ESP8266mDNS.h>
+#include <ESPmDNS.h>
 #include <Arduino.h> // For Log.infoln
 
 class MDNSManager
@@ -9,7 +9,6 @@ class MDNSManager
 public:
     MDNSManager(const char *hostname);
     void begin();
-    void loop(); // New method to be called in main loop
 
 private:
     const char *_hostname;
