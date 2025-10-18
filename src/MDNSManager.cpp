@@ -1,10 +1,11 @@
 #include "MDNSManager.h"
 #include <ArduinoLog.h>
 
-MDNSManager::MDNSManager(const char *hostname) : _hostname(hostname) {}
+MDNSManager::MDNSManager() {}
 
-void MDNSManager::begin()
+void MDNSManager::begin(const char *hostname)
 {
+    _hostname = hostname;
     if (!MDNS.begin(_hostname))
     {
         Log.infoln("[mDNS] Error setting up MDNS responder!");

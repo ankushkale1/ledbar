@@ -16,7 +16,7 @@ struct ChannelSetting
   bool scheduleEnabled = false;
   String startTime = "22:00";
   String endTime = "06:00";
-  int scheduledBrightness = 0;   // Default brightness for scheduled mode
+  int scheduledBrightness = 0;  // Default brightness for scheduled mode
   bool schedulerActive = false; // Indicates if the scheduler is active for this channel
 };
 

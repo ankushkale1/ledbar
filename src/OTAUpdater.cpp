@@ -1,10 +1,11 @@
 #include "OTAUpdater.h"
 #include <ArduinoLog.h>
 
-OTAUpdater::OTAUpdater(const char *hostname) : _hostname(hostname) {}
+OTAUpdater::OTAUpdater() {}
 
-void OTAUpdater::begin()
+void OTAUpdater::begin(const char *hostname)
 {
+    _hostname = hostname;
     ArduinoOTA.setPort(8266);
     ArduinoOTA.setHostname(_hostname);
     // ArduinoOTA.setPassword("admin");  // Uncomment and set password if needed
@@ -32,4 +33,5 @@ void OTAUpdater::begin()
         else if (error == OTA_END_ERROR)
             Log.infoln("End Failed"); });
     ArduinoOTA.begin();
+    Log.infoln("[OTA] Ready for updates");
 }

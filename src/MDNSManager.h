@@ -7,8 +7,8 @@
 class MDNSManager
 {
 public:
-    MDNSManager(const char *hostname);
-    void begin();
+    MDNSManager();
+    void begin(const char *hostname);
     void loop(); // New method to be called in main loop
 
 private:

@@ -11,7 +11,6 @@
 #include "OTAUpdater.h"
 #include "WebsocketLogger.h"
 #include "IrManager.h"
-
 // DONT USE PINS
 // D4	GPIO2	Boot Mode Pin & LED. Connected to the onboard LED. Must be floating or pulled HIGH during boot.
 // D8	GPIO15	Boot Mode Pin. Must be pulled LOW for the board to boot normally. Connecting a component that pulls it HIGH will prevent the board from starting.
@@ -48,17 +47,16 @@ const int MOTION_OFF_HOUR = 6;
 
 // --- Global Object Instantiation ---
 SettingsManager settingsManager;
-const char *MDNS_HOSTNAME = settingsManager.getSettings().mDNSName.c_str(); // mDNS hostname for the device
-LedController ledController(INVERTING_LOGIC);                               // true for inverted logic (active-low LEDs)
+LedController ledController(INVERTING_LOGIC); // true for inverted logic (active-low LEDs)
 WiFiConnector wifiConnector(WIFI_SSID, WIFI_PASSWORD);
 TimeManager timeManager;
 Scheduler scheduler;
-MDNSManager mdnsManager(MDNS_HOSTNAME);
+MDNSManager mdnsManager;
 WebSocketsServer webSocket(81);
 WebsocketLogger websocketLogger(webSocket);
 WebServerController webServerController(80, webSocket, settingsManager, ledController, scheduler, timeManager);
 // MotionSensor motionSensor(MOTION_SENSOR_PIN);
-OTAUpdater otaUpdater(MDNS_HOSTNAME);
+OTAUpdater otaUpdater;
 IrManager irManager(IR_RECEIVER_PIN);
 
 // --- Timer for non-blocking scheduler check ---
@@ -72,7 +70,7 @@ void setup()
     Log.infoln("\n[Main] Booting device...");
 
     // 1. Initialize filesystem and load settings
-    // settingsManager.begin();
+    settingsManager.begin();
     DeviceSettings &settings = settingsManager.getSettings();
 
     // 2. Initialize LED controller and apply loaded settings
@@ -103,13 +101,14 @@ void setup()
     timeManager.update(); // Force initial update
 
     // 6. Initialize mDNS
-    mdnsManager.begin();
+    const char *MDNS_HOSTNAME = settingsManager.getSettings().mDNSName.c_str(); // mDNS hostname for the device
+    mdnsManager.begin(MDNS_HOSTNAME);
 
     // 7. Initialize and start the Web Server
     webServerController.begin();
     websocketLogger.begin();
 
-    otaUpdater.begin();
+    otaUpdater.begin(MDNS_HOSTNAME);
     Log.infoln("[OTA] Ready for updates");
 
     Log.infoln("[Main] Setup complete. System running.");
@@ -125,7 +124,6 @@ void loop()
     // Must be called every loop to service web requests
     webServerController.handleClient();
     websocketLogger.loop();
-
     // Keep mDNS service active
     mdnsManager.loop();
 

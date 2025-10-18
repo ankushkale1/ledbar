@@ -7,8 +7,8 @@
 class OTAUpdater
 {
 public:
-    OTAUpdater(const char *hostname);
-    void begin();
+    OTAUpdater();
+    void begin(const char *hostname);
 
 private:
     const char *_hostname;

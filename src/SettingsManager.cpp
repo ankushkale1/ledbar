@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <ArduinoLog.h>
 #include <EEPROM.h>
+#include <string.h>
 
 #define MDNS_NAME_EEPROM_ADDR 0
 const String default_mDNSName = "ledbar";
@@ -10,7 +11,7 @@ const String default_mDNSName = "ledbar";
 SettingsManager::SettingsManager()
 {
     // Initialization is handled in begin() to ensure filesystem is ready.
-    begin();
+    // Constructor is now empty. begin() must be called from setup().
 }
 
 void SettingsManager::begin()
@@ -25,20 +26,6 @@ void SettingsManager::begin()
         if (!loadSettings())
         {
             Log.infoln("[Settings] No settings file found or file corrupted, creating default settings.");
-            // Populate with some default channels if none exist to prevent empty settings
-            if (settings.channels.empty())
-            {
-                ChannelSetting channel1;
-                channel1.pin = "D1";
-                channel1.state = false;
-                channel1.brightness = 80;
-                settings.channels.push_back(channel1);
-                ChannelSetting channel2;
-                channel2.pin = "D2";
-                channel2.state = false;
-                channel2.brightness = 80;
-                settings.channels.push_back(channel2);
-            }
             saveSettings();
         }
     }
@@ -72,6 +59,8 @@ bool SettingsManager::loadSettings()
 
     // Load scheduler settings, providing defaults if keys are missing
     settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Default to IST if not present
+    settings.irCodeBrightnessUp = doc["irCodeBrightnessUp"] | "";
+    settings.irCodeBrightnessDown = doc["irCodeBrightnessDown"] | "";
     loadMDNSNameFromEEPROM();
 
     // Load channel settings
@@ -109,6 +98,8 @@ bool SettingsManager::saveSettings()
 
     // Save scheduler settings
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
+    doc["irCodeBrightnessUp"] = settings.irCodeBrightnessUp;
+    doc["irCodeBrightnessDown"] = settings.irCodeBrightnessDown;
     saveMDNSNameToEEPROM(settings.mDNSName);
 
     // Save channel settings
@@ -150,12 +141,37 @@ bool SettingsManager::loadMDNSNameFromEEPROM()
     for (int i = 0; i < 32; i++)
     { // Assuming a max length of 32 for mDNS name
         char c = EEPROM.read(MDNS_NAME_EEPROM_ADDR + i);
-        if (c == '\0')
+        if (c == '\0' || c == 0xFF)
+        { // Stop on null terminator or erased EEPROM byte
             break;
+        }
         storedMDNSName += c;
     }
 
-    if (storedMDNSName.length() > 0)
+    // Stricter validation for mDNS hostnames
+    bool nameIsValid = storedMDNSName.length() > 0 && storedMDNSName.length() < 32 && storedMDNSName.isEmpty() == false;
+    if (nameIsValid)
+    {
+        // Hostnames cannot start or end with a hyphen
+        if (storedMDNSName.startsWith("-") || storedMDNSName.endsWith("-"))
+        {
+            nameIsValid = false;
+        }
+        else
+        {
+            for (char c : storedMDNSName)
+            {
+                // Hostnames can only contain alphanumeric characters and hyphens
+                if (!isalnum(c) && c != '-')
+                {
+                    nameIsValid = false;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (nameIsValid)
     {
         settings.mDNSName = storedMDNSName;
         Log.infoln("[Settings] mDNS name loaded from EEPROM: %s", settings.mDNSName.c_str());
@@ -163,8 +179,9 @@ bool SettingsManager::loadMDNSNameFromEEPROM()
     }
     else
     {
-        settings.mDNSName = default_mDNSName; // Default if EEPROM is empty
+        settings.mDNSName = default_mDNSName; // Default if EEPROM is empty or invalid
         Log.infoln("[Settings] No mDNS name found in EEPROM, using default: %s", settings.mDNSName.c_str());
+        saveMDNSNameToEEPROM(settings.mDNSName); // Correct the value in EEPROM for next boot
         return false;
     }
 }

@@ -27,6 +27,8 @@ private:
     Scheduler &_scheduler;
     TimeManager &_timeManager;
 
+    unsigned long _lastHeapTime = 0;
+
     void handleRoot();
     void handleSettings();
     void handleStatus();
@@ -35,6 +37,9 @@ private:
     void handleDownloadSettings();
     void handleFileUpload();
     void handleUpload();
+    void handleRestart();
+    void handleHeap();
+    void broadcastHeap();
 };
 
 #endif
