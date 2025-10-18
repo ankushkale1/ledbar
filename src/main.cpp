@@ -41,7 +41,7 @@ const char *WIFI_PASSWORD = "Ak@00789101112";
 // Pin Assignments
 const int INVERTING_LOGIC = true;
 // const int MOTION_SENSOR_PIN = D0; // we dont have enough safe pins so disabling this
-const int IR_RECEIVER_PIN = D4;
+const int IR_RECEIVER_PIN = D7;
 const int MOTION_ON_HOUR = 21;
 const int MOTION_OFF_HOUR = 6;
 
