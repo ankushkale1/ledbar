@@ -8,8 +8,10 @@ WiFiConnector::WiFiConnector(const char *ssid, const char *password, int statusL
     _lastAttemptTimestamp = 0;
     _lastPulseTimestamp = 0;
     _ledPulseState = false;
-    pinMode(_statusLedPin, OUTPUT);
-    digitalWrite(_statusLedPin, HIGH); // LED is off (assuming common anode or inverted logic)
+    if (_statusLedPin != -1) {
+        pinMode(_statusLedPin, OUTPUT);
+        digitalWrite(_statusLedPin, HIGH); // LED is off (assuming common anode or inverted logic)
+    }
 }
 
 void WiFiConnector::connect()
@@ -31,7 +33,9 @@ void WiFiConnector::handleConnection()
             Serial.print("[WiFi] IP Address: ");
             Log.infoln(WiFi.localIP());
             _currentState = WIFI_IDLE;
-            digitalWrite(_statusLedPin, HIGH); // Turn LED off
+            if (_statusLedPin != -1) {
+                digitalWrite(_statusLedPin, HIGH); // Turn LED off
+            }
         }
         else if (millis() - _lastAttemptTimestamp > CONNECTION_TIMEOUT)
         {
@@ -47,14 +51,18 @@ void WiFiConnector::handleConnection()
             {
                 _lastPulseTimestamp = millis();
                 _ledPulseState = !_ledPulseState;
-                digitalWrite(_statusLedPin, _ledPulseState ? LOW : HIGH); // Pulse ON/OFF
+                if (_statusLedPin != -1) {
+                    digitalWrite(_statusLedPin, _ledPulseState ? LOW : HIGH); // Pulse ON/OFF
+                }
             }
         }
     }
     else if (_currentState == WIFI_FAILED_WAITING)
     {
         // Solid ON during wait period
-        digitalWrite(_statusLedPin, LOW);
+        if (_statusLedPin != -1) {
+            digitalWrite(_statusLedPin, LOW);
+        }
         if (millis() - _lastAttemptTimestamp > RETRY_WAIT_PERIOD)
         {
             connect(); // Re-initiate connection process

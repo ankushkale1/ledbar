@@ -16,9 +16,10 @@ void IrManager::begin() {
 
 void IrManager::loop() {
     if (irrecv->decode(&results)) {
-        if (results.value != 0) {
+        if (results.value != 0 && results.value != 0xFFFFFFFF) {
             _irData = results.value;
             _irAvailable = true;
+            delay(100); // Add a small delay to debounce
         }
         irrecv->resume();
     }

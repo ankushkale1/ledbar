@@ -5,7 +5,7 @@
 
 class WiFiConnector {
 public:
-    WiFiConnector(const char* ssid, const char* password, int statusLedPin);
+    WiFiConnector(const char* ssid, const char* password, int statusLedPin = -1);
     void connect();
     void handleConnection();
     bool isConnected();

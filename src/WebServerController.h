@@ -8,27 +8,33 @@
 #include "Scheduler.h"
 #include "TimeManager.h"
 
-class WebServerController {
+class WebServerController
+{
 public:
-    WebServerController(int port, WebSocketsServer& ws, SettingsManager& settingsMgr, LedController& ledCtrl, Scheduler& scheduler, TimeManager& timeMgr);
+    WebServerController(int port, WebSocketsServer &ws, SettingsManager &settingsMgr, LedController &ledCtrl, Scheduler &scheduler, TimeManager &timeMgr);
     void begin();
     void handleClient();
-    void serveFile(const String& filePath);
-    String getContentType(const String& filePath);
+    void serveFile(const String &filePath);
+    String getContentType(const String &filePath);
 
 private:
     ESP8266WebServer _server;
-    WebSocketsServer& _ws;
-    SettingsManager& _settingsManager;
-    LedController& _ledController;
-    Scheduler& _scheduler;
-    TimeManager& _timeManager;
+    File fsUploadFile;
+    String _uploadFilename;
+    WebSocketsServer &_ws;
+    SettingsManager &_settingsManager;
+    LedController &_ledController;
+    Scheduler &_scheduler;
+    TimeManager &_timeManager;
 
     void handleRoot();
     void handleSettings();
     void handleStatus();
     void handleVersion();
     void handleNotFound();
+    void handleDownloadSettings();
+    void handleFileUpload();
+    void handleUpload();
 };
 
 #endif

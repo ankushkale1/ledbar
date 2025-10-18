@@ -19,6 +19,23 @@ void WebServerController::begin()
                { this->handleStatus(); });
     _server.on("/version", HTTP_GET, [this]()
                { this->handleVersion(); });
+
+    _server.on("/settings.json", HTTP_GET, [this]() { 
+        this->handleDownloadSettings(); 
+    });
+
+    _server.on("/upload", HTTP_POST, [this]() { 
+        if (_uploadFilename == "settings.json") { 
+            _server.send(200, "text/plain", "Settings uploaded. Restarting...");
+            ESP.restart(); 
+        } else { 
+            _server.send(200, "text/plain", "File uploaded successfully."); 
+        }
+        _uploadFilename = ""; 
+    }, [this]() { 
+        this->handleFileUpload(); 
+    });
+
     _server.onNotFound([this]()
                        { this->handleNotFound(); });
 
@@ -185,6 +202,28 @@ void WebServerController::handleVersion()
 void WebServerController::handleNotFound()
 {
     _server.send(404, "text/plain", "404: Not Found");
+}
+
+void WebServerController::handleDownloadSettings()
+{
+    serveFile("/settings.json");
+}
+
+void WebServerController::handleFileUpload() {
+    HTTPUpload& upload = _server.upload();
+    if (upload.status == UPLOAD_FILE_START) {
+        _uploadFilename = upload.filename;
+        String filename_with_path = "/" + _uploadFilename;
+        fsUploadFile = LittleFS.open(filename_with_path, "w");
+    } else if (upload.status == UPLOAD_FILE_WRITE) {
+        if (fsUploadFile) {
+            fsUploadFile.write(upload.buf, upload.currentSize);
+        }
+    } else if (upload.status == UPLOAD_FILE_END) {
+        if (fsUploadFile) {
+            fsUploadFile.close();
+        }
+    }
 }
 
 String WebServerController::getContentType(const String &filePath)
