@@ -136,6 +136,7 @@
         class="text-2xl font-bold text-slate-100 border-b border-slate-700 pb-2 mb-6"
       >
         Multi-Channel PWM Controller
+        <span id="version-display" class="text-sm text-gray-500 ml-2"></span>
       </h1>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -243,12 +244,199 @@
             </select>
           </div>
         </div>
+
+        <div
+          class="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700"
+        >
+          <h2
+            class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
+          >
+            IR Remote
+          </h2>
+          <div class="flex justify-between items-center mb-2">
+            <label for="last-ir-code" class="text-slate-300"
+              >Last Received Code</label
+            >
+            <input
+              type="text"
+              id="last-ir-code"
+              class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-40 text-center"
+              readonly
+            />
+          </div>
+          <div class="flex justify-between items-center mb-2">
+            <label for="ir-code-brightness-up" class="text-slate-300"
+              >Brightness Up Code</label
+            >
+            <div class="flex items-center">
+              <input
+                type="text"
+                id="ir-code-brightness-up"
+                class="ir-code-global bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-28 text-center"
+                readonly
+              />
+              <button
+                class="learn-ir-code-global-button bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors ml-2"
+              >
+                Learn
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-between items-center mb-2">
+            <label for="ir-code-brightness-down" class="text-slate-300"
+              >Brightness Down Code</label
+            >
+            <div class="flex items-center">
+              <input
+                type="text"
+                id="ir-code-brightness-down"
+                class="ir-code-global bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-28 text-center"
+                readonly
+              />
+              <button
+                class="learn-ir-code-global-button bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors ml-2"
+              >
+                Learn
+              </button>
+            </div>
+          </div>
+          <div class="flex justify-between items-center">
+            <label for="ir-code-restart" class="text-slate-300"
+              >Restart Code</label
+            >
+            <div class="flex items-center">
+              <input
+                type="text"
+                id="ir-code-restart"
+                class="ir-code-global bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-28 text-center"
+                readonly
+              />
+              <button
+                class="learn-ir-code-global-button bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors ml-2"
+              >
+                Learn
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div
         id="pwm-controls-container"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4"
       ></div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div
+          class="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700"
+        >
+          <h2
+            class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
+          >
+            System Status
+          </h2>
+          <div class="flex justify-between items-center mb-2">
+            <label for="heap-size" class="text-slate-300">Free Heap</label>
+            <span id="heap-size" class="text-blue-400 font-medium">-</span>
+          </div>
+          <div class="flex justify-between items-center mb-4">
+            <label for="uptime" class="text-slate-300">Uptime</label>
+            <span id="uptime" class="text-green-400 font-medium">-</span>
+          </div>
+          <button
+            id="restart-button"
+            class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded transition-colors"
+          >
+            Restart
+          </button>
+        </div>
+        <div
+          class="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700"
+        >
+          <h2
+            class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
+          >
+            Settings Backup & Restore
+          </h2>
+          <p class="text-slate-400 mb-4">
+            Download your current device settings or restore them from a backup
+            file.
+          </p>
+          <a
+            href="/settings.json"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+            download="settings.json"
+            >Download Settings</a
+          >
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div
+          class="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700"
+        >
+          <h2
+            class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4"
+          >
+            Upload File
+          </h2>
+          <p class="text-slate-400 mb-4">
+            Upload files to the device. Uploading a
+            <code>settings.json</code> file will restore settings and restart
+            the device.
+          </p>
+          <form method="POST" action="/upload" enctype="multipart/form-data">
+            <input
+              type="file"
+              name="upload"
+              class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none"
+            />
+            <input
+              type="submit"
+              value="Upload"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors ml-2"
+            />
+          </form>
+        </div>
+      </div>
+
+      <details
+        id="serial-monitor-details"
+        class="bg-slate-800 rounded-lg p-4 shadow-lg border border-slate-700 mt-6"
+      >
+        <summary class="cursor-pointer text-lg font-semibold text-slate-100">
+          Serial Monitor
+        </summary>
+        <div class="flex justify-between items-center mt-2">
+          <div>
+            <button
+              id="clear-log-button"
+              class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-1 px-2 rounded transition-colors border border-slate-600"
+            >
+              Clear Log
+            </button>
+          </div>
+          <div class="flex items-center">
+            <input
+              type="text"
+              id="log-filter-input"
+              placeholder="Search logs..."
+              class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-1 focus:border-blue-500 focus:outline-none text-sm"
+            />
+            <button
+              id="clear-filter-button"
+              class="ml-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-1 px-2 rounded transition-colors border border-slate-600"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="log-container"
+          class="mt-2 p-2 bg-slate-900 rounded h-64 overflow-y-scroll font-mono text-sm text-slate-300"
+        ></div>
+      </details>
     </div>
 
     <template id="channel-template">
@@ -302,23 +490,7 @@
             <span class="brightness-value text-blue-400 font-medium">100%</span>
           </div>
           <div class="flex justify-around items-center mb-4 gap-2">
-            <but      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
-            <h2 class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4">Settings Backup & Restore</h2>
-            <p class="text-slate-400 mb-4">Download your current device settings or restore them from a backup file.</p>
-            <a href="/settings.json" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors" download="settings.json">Download Settings</a>
-        </div>
-        <div class="bg-slate-800 rounded-lg p-6 shadow-lg border border-slate-700">
-            <h2 class="text-xl font-semibold text-slate-100 border-b border-slate-700 pb-2 mb-4">Upload File</h2>
-            <p class="text-slate-400 mb-4">Upload files to the device. Uploading a <code>settings.json</code> file will restore settings and restart the device.</p>
-            <form method="POST" action="/upload" enctype="multipart/form-data">
-                <input type="file" name="upload" class="bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none">
-                <input type="submit" value="Upload" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors ml-2">
-            </form>
-        </div>
-      </div>
-
-ton
+            <button
               class="brightness-button bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-2 px-4 rounded transition-colors border border-slate-600"
             >
               Dim 10%
@@ -337,6 +509,19 @@ ton
                 class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 transition-all duration-400 rounded-full"
               ></span>
             </label>
+          </div>
+          <div class="flex justify-between items-center mb-4">
+            <label class="text-slate-300">IR Code</label>
+            <input
+              type="text"
+              class="ir-code bg-slate-700 text-slate-100 border border-slate-600 rounded p-2 focus:border-blue-500 focus:outline-none w-28 text-center"
+              readonly
+            />
+            <button
+              class="learn-ir-code-button bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors"
+            >
+              Learn
+            </button>
           </div>
         </div>
         <fieldset
@@ -416,6 +601,8 @@ ton
         let needsPolling = true;
         let scheduleCheckInterval = null;
         let nextScheduleCheck = null;
+        let socket = null;
+        let logPruneInterval = null;
 
         function areStatesEqual(state1, state2) {
           if (!state1 || !state2) return false;
@@ -435,25 +622,6 @@ ton
             );
           });
         }
-
-        // async function updateChannelName(channelIndex, newName) {
-        //   const settings = {
-        //     channels: [],
-        //     gmt_offset: parseInt($timezoneSelect.val()),
-        //   };
-        //   $(".card").each(function (i, card) {
-        //     const $card = $(card);
-        //     settings.channels.push({
-        //       pin: $card.find(".pin-name").val(),
-        //       channelName: $card.data("channelName"), // Use data attribute
-        //       state: $card.find(".led-toggle").prop("checked"),
-        //       brightness: parseInt($card.find(".brightness-slider").val()),
-        //     });
-        //   });
-
-        //   settings.channels[channelIndex].channelName = newName;
-        //   await sendSettings(settings);
-        // }
 
         function updatePollingState() {
           const shouldPoll = !areStatesEqual(lastSentState, lastConfirmedState);
@@ -656,7 +824,7 @@ ton
             showNotification("Error: Could not reach server.", "error");
           }
         }
-        const debouncedSendSettings = debounce(sendSettings, 1000);
+        const debouncedSendSettings = debounce(sendSettings, 200);
 
         async function updateStatus() {
           if (isUpdating || !needsPolling) return;
@@ -676,6 +844,18 @@ ton
             if (data.mDNSName !== undefined) {
               $mDnsname.val(data.mDNSName);
             }
+            if (data.irCodeBrightnessUp !== undefined) {
+              $("#ir-code-brightness-up").val(data.irCodeBrightnessUp);
+            }
+            if (data.irCodeBrightnessDown !== undefined) {
+              $("#ir-code-brightness-down").val(data.irCodeBrightnessDown);
+            }
+            if (data.irCodeRestart !== undefined) {
+              $("#ir-code-restart").val(data.irCodeRestart);
+            }
+            if (data.uptime !== undefined) {
+              $("#uptime").text(data.uptime);
+            }
             data.channels?.forEach((channel, i) => {
               const $card = $(".card").eq(i);
               if ($card.length) {
@@ -684,6 +864,7 @@ ton
                   $card.data("channelName", channel.channelName);
                 }
                 $card.find(".pin-name").val(channel.pin || "");
+                $card.find(".ir-code").val(channel.irCode || "");
                 $card.find(".led-toggle").prop("checked", channel.state);
                 $card.find(".brightness-slider").val(channel.brightness);
                 $card.find(".brightness-value").text(`${channel.brightness}%`);
@@ -717,6 +898,7 @@ ton
                 return {
                   pin: $card.find(".pin-name").val(),
                   channelName: $card.find(".channel-name-display").text(),
+                  irCode: $card.find(".ir-code").val(),
                   state: $card.find(".led-toggle").prop("checked"),
                   schedulerEnabled: $card
                     .find(".schedule-toggle")
@@ -732,6 +914,9 @@ ton
               .get(),
             gmt_offset: parseInt($timezoneSelect.val()),
             mDNSName: $mDnsname.val().trim(),
+            irCodeBrightnessUp: $("#ir-code-brightness-up").val(),
+            irCodeBrightnessDown: $("#ir-code-brightness-down").val(),
+            irCodeRestart: $("#ir-code-restart").val(),
           };
           debouncedSendSettings(payload);
         }
@@ -784,6 +969,34 @@ ton
           }
         );
 
+        $pwmControlsContainer.on("click", ".learn-ir-code-button", function () {
+          const $button = $(this);
+          if ($button.hasClass("learning")) {
+            $button.removeClass("learning").text("Learn");
+          } else {
+            $(
+              ".learn-ir-code-button.learning, .learn-ir-code-global-button.learning"
+            )
+              .removeClass("learning")
+              .text("Learn");
+            $button.addClass("learning").text("Listening...");
+          }
+        });
+
+        $("body").on("click", ".learn-ir-code-global-button", function () {
+          const $button = $(this);
+          if ($button.hasClass("learning")) {
+            $button.removeClass("learning").text("Learn");
+          } else {
+            $(
+              ".learn-ir-code-button.learning, .learn-ir-code-global-button.learning"
+            )
+              .removeClass("learning")
+              .text("Learn");
+            $button.addClass("learning").text("Listening...");
+          }
+        });
+
         $pwmControlsContainer.on("click", ".edit-channel-name", function () {
           const $card = $(this).closest(".card");
           const $nameDisplay = $card.find(".channel-name-display");
@@ -801,11 +1014,166 @@ ton
           }
         });
 
+        async function updateVersion() {
+          try {
+            const data = await $.getJSON("/version");
+            if (data.version) {
+              $("#version-display").text(`v${data.version}`);
+            }
+          } catch (error) {
+            console.error("Error fetching version:", error);
+          }
+        }
+
+        function pruneLogs() {
+          const logContainer = document.getElementById("log-container");
+          const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+          const logEntries = logContainer.querySelectorAll(
+            "div[data-timestamp]"
+          );
+          logEntries.forEach((entry) => {
+            if (parseInt(entry.dataset.timestamp) < fiveMinutesAgo) {
+              entry.remove();
+            }
+          });
+        }
+
+        function connectWebSocket() {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            console.log("WebSocket is already connected.");
+            return;
+          }
+          const logContainer = document.getElementById("log-container");
+          socket = new WebSocket(`ws://${window.location.hostname}:81/`);
+
+          socket.onopen = function () {
+            console.log("WebSocket connection established");
+            logContainer.innerHTML +=
+              '<div class="text-green-400">[WS] Connection established</div>';
+            socket.send("ready");
+            if (!logPruneInterval) {
+              logPruneInterval = setInterval(pruneLogs, 10000); // Check every 10 seconds
+            }
+          };
+
+          socket.onmessage = function (event) {
+            const isScrolledToBottom =
+              logContainer.scrollHeight - logContainer.clientHeight <=
+              logContainer.scrollTop + 1;
+            const logEntry = document.createElement("div");
+            logEntry.dataset.timestamp = Date.now();
+            if (event.data.startsWith("ir_code:")) {
+              const irCode = event.data.split(":")[1];
+              $("#last-ir-code").val(irCode);
+              const $learningButton = $(".learn-ir-code-button.learning");
+              const $learningGlobalButton = $(
+                ".learn-ir-code-global-button.learning"
+              );
+
+              if ($learningButton.length) {
+                const $card = $learningButton.closest(".card");
+                if (
+                  confirm(
+                    `Assign IR code ${irCode} to ${$card.data("channelName")}?`
+                  )
+                ) {
+                  $card.find(".ir-code").val(irCode);
+                  buildPayload();
+                }
+                $learningButton.removeClass("learning").text("Learn");
+              } else if ($learningGlobalButton.length) {
+                const $input = $learningGlobalButton.prev("input");
+                if (confirm(`Assign IR code ${irCode} to this action?`)) {
+                  $input.val(irCode);
+                  buildPayload();
+                }
+                $learningGlobalButton.removeClass("learning").text("Learn");
+              }
+            } else {
+              try {
+                const data = JSON.parse(event.data);
+                if (data.heap) {
+                  $("#heap-size").text(`${data.heap} bytes`);
+                } else {
+                  logEntry.innerHTML = event.data.replace(/\n/g, "<br>");
+                  logContainer.appendChild(logEntry);
+                }
+              } catch (e) {
+                logEntry.innerHTML = event.data.replace(/\n/g, "<br>");
+                logContainer.appendChild(logEntry);
+              }
+            }
+            if (isScrolledToBottom) {
+              logContainer.scrollTop = logContainer.scrollHeight;
+            }
+          };
+
+          socket.onclose = function () {
+            console.log("WebSocket connection closed.");
+            logContainer.innerHTML +=
+              '<div class="text-red-400">[WS] Connection closed.</div>';
+            if (logPruneInterval) {
+              clearInterval(logPruneInterval);
+              logPruneInterval = null;
+            }
+          };
+
+          socket.onerror = function (error) {
+            console.error("WebSocket Error:", error);
+            logContainer.innerHTML += `<div class="text-red-500">[WS] Error: ${error.message}</div>`;
+          };
+        }
+
+        function disconnectWebSocket() {
+          if (socket) {
+            socket.onclose = null; // prevent reconnection
+            socket.close();
+            socket = null;
+            $("#log-container").append(
+              '<div class="text-yellow-400">[WS] Connection closed by user.</div>'
+            );
+            if (logPruneInterval) {
+              clearInterval(logPruneInterval);
+              logPruneInterval = null;
+            }
+          }
+        }
+
+        $("#clear-log-button").on("click", function () {
+          $("#log-container").empty();
+        });
+
+        $("#log-filter-input").on("keyup", function () {
+          const filterText = $(this).val().toLowerCase();
+          $("#log-container > div").each(function () {
+            const logText = $(this).text().toLowerCase();
+            if (logText.includes(filterText)) {
+              $(this).show();
+            } else {
+              $(this).hide();
+            }
+          });
+        });
+
+        $("#clear-filter-button").on("click", function () {
+          $("#log-filter-input").val("");
+          $("#log-container > div").show();
+        });
+
+        $("#serial-monitor-details").on("toggle", function () {
+          if ($(this).prop("open")) {
+            connectWebSocket();
+          } else {
+            disconnectWebSocket();
+          }
+        });
+
         renderChannels(parseInt($pinCountInput.val()));
         updateStatus();
         updatePollingState();
         checkSchedules();
         updateScheduleChecking();
+        updateVersion();
       });
     </script>
   </body>
