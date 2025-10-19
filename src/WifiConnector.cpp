@@ -15,10 +15,12 @@ WiFiConnector::WiFiConnector(const char *ssid, const char *password, int statusL
 void WiFiConnector::connect()
 {
     Log.infoln("[WiFi] Starting connection process...");
+    WiFi.mode(WIFI_STA); // Set WiFi mode to station
     WiFi.setSleep(false); // Disable WiFi sleep mode for ESP32
     _currentState = WIFI_CONNECTING;
     _lastAttemptTimestamp = millis();
     WiFi.begin(_ssid, _password);
+    delay(100); // Add a small delay
 }
 
 void WiFiConnector::handleConnection()
@@ -48,6 +50,7 @@ void WiFiConnector::handleConnection()
                 _lastPulseTimestamp = millis();
                 _ledPulseState = !_ledPulseState;
                 digitalWrite(_statusLedPin, _ledPulseState ? LOW : HIGH); // Pulse ON/OFF
+                Log.verboseln("[WiFi] Connection status: %d", WiFi.status());
             }
         }
     }

@@ -26,16 +26,62 @@ void SettingsManager::begin()
             if (settings.channels.empty())
             {
                 ChannelSetting channel1;
-                channel1.pin = "GPIO1";
+                channel1.pin = "GPIO3";
+                channel1.channelName = "UnderTable Light";
                 channel1.state = false;
+                channel1.scheduleEnabled = false;
+                channel1.irCode = "EC13FB04";
                 channel1.brightness = 80;
                 settings.channels.push_back(channel1);
+
                 ChannelSetting channel2;
-                channel2.pin = "GPIO2";
+                channel2.pin = "GPIO4";
+                channel2.channelName = "LedBar";
                 channel2.state = false;
+                channel2.scheduleEnabled = false;
+                channel2.irCode = "ED12FB04";
                 channel2.brightness = 80;
                 settings.channels.push_back(channel2);
+
+                ChannelSetting channel3;
+                channel3.pin = "GPIO5";
+                channel3.channelName = "Background Light";
+                channel3.state = false;
+                channel3.scheduleEnabled = false;
+                channel3.startTime = "19:00";
+                channel3.endTime = "23:30";
+                channel3.scheduledBrightness = 80;
+                channel3.irCode = "EE11FB04";
+                channel3.brightness = 80;
+                settings.channels.push_back(channel3);
+
+                ChannelSetting channel4;
+                channel4.pin = "GPIO6";
+                channel4.state = false;
+                channel4.scheduleEnabled = false;
+                channel4.irCode = "EB14FB04";
+                channel4.brightness = 80;
+                settings.channels.push_back(channel4);
+
+                ChannelSetting channel5;
+                channel5.pin = "GPIO7";
+                channel5.state = false;
+                channel5.scheduleEnabled = false;
+                channel5.irCode = "EA15FB04";
+                channel5.brightness = 80;
+                settings.channels.push_back(channel5);
+
+                ChannelSetting channel6;
+                channel6.pin = "GPIO10";
+                channel6.state = false;
+                channel6.scheduleEnabled = false;
+                channel6.irCode = "E916FB04";
+                channel6.brightness = 80;
+                settings.channels.push_back(channel6);
             }
+            settings.gmtOffsetSeconds = 19800; // IST
+            settings.irCodeBrightnessDown = "F40BFB04";
+            settings.irCodeBrightnessUp = "55AAFB04";
             saveSettings();
         }
     }
@@ -69,6 +115,8 @@ bool SettingsManager::loadSettings()
 
     // Load scheduler settings, providing defaults if keys are missing
     settings.gmtOffsetSeconds = doc["gmt_offset"] | 19800; // Default to IST if not present
+    settings.irCodeBrightnessUp = doc["irCodeBrightnessUp"].as<String>();
+    settings.irCodeBrightnessDown = doc["irCodeBrightnessDown"].as<String>();
     loadMDNSName();
 
     // Load channel settings
@@ -106,6 +154,9 @@ bool SettingsManager::saveSettings()
 
     // Save scheduler settings
     doc["gmt_offset"] = settings.gmtOffsetSeconds;
+    doc["mDNSName"] = settings.mDNSName;
+    doc["irCodeBrightnessUp"] = settings.irCodeBrightnessUp;
+    doc["irCodeBrightnessDown"] = settings.irCodeBrightnessDown;
     saveMDNSName(settings.mDNSName);
 
     // Save channel settings
