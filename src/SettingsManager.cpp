@@ -3,7 +3,7 @@
 #include <ArduinoLog.h>
 
 #define JSON_BUFFER_SIZE 2048 // more the channels greater the size, 1024 per 4 channels approx
-const String default_mDNSName = "ledbar";
+const String default_mDNSName = "ledbar2";
 
 SettingsManager::SettingsManager()
 {
@@ -30,7 +30,7 @@ void SettingsManager::begin()
                 channel1.channelName = "UnderTable Light";
                 channel1.state = false;
                 channel1.scheduleEnabled = false;
-                channel1.irCode = "EC13FB04";
+                channel1.irCode = "EB14BF00";
                 channel1.brightness = 80;
                 settings.channels.push_back(channel1);
 
@@ -39,7 +39,7 @@ void SettingsManager::begin()
                 channel2.channelName = "LedBar";
                 channel2.state = false;
                 channel2.scheduleEnabled = false;
-                channel2.irCode = "ED12FB04";
+                channel2.irCode = "EB14BF00";
                 channel2.brightness = 80;
                 settings.channels.push_back(channel2);
 
@@ -51,7 +51,7 @@ void SettingsManager::begin()
                 channel3.startTime = "19:00";
                 channel3.endTime = "23:30";
                 channel3.scheduledBrightness = 80;
-                channel3.irCode = "EE11FB04";
+                channel3.irCode = "F20DBF00";
                 channel3.brightness = 80;
                 settings.channels.push_back(channel3);
 
@@ -59,7 +59,7 @@ void SettingsManager::begin()
                 channel4.pin = "GPIO6";
                 channel4.state = false;
                 channel4.scheduleEnabled = false;
-                channel4.irCode = "EB14FB04";
+                channel4.irCode = "33CCBF00";
                 channel4.brightness = 80;
                 settings.channels.push_back(channel4);
 
@@ -67,7 +67,7 @@ void SettingsManager::begin()
                 channel5.pin = "GPIO7";
                 channel5.state = false;
                 channel5.scheduleEnabled = false;
-                channel5.irCode = "EA15FB04";
+                channel5.irCode = "33CCBF00";
                 channel5.brightness = 80;
                 settings.channels.push_back(channel5);
 
@@ -75,13 +75,13 @@ void SettingsManager::begin()
                 channel6.pin = "GPIO10";
                 channel6.state = false;
                 channel6.scheduleEnabled = false;
-                channel6.irCode = "E916FB04";
+                channel6.irCode = "33CCBF00";
                 channel6.brightness = 80;
                 settings.channels.push_back(channel6);
             }
             settings.gmtOffsetSeconds = 19800; // IST
-            settings.irCodeBrightnessDown = "F40BFB04";
-            settings.irCodeBrightnessUp = "55AAFB04";
+            settings.irCodeBrightnessDown = "BC43BF00";
+            settings.irCodeBrightnessUp = "BB44BF00";
             saveSettings();
         }
     }
@@ -93,7 +93,7 @@ void SettingsManager::begin()
 
 bool SettingsManager::loadSettings()
 {
-    File configFile = SPIFFS.open("/settings.json", "r");
+    File configFile = SPIFFS.open("/settings_pooja.json", "r");
     if (!configFile)
     {
         Log.infoln("[Settings] Failed to open config file for reading.");
